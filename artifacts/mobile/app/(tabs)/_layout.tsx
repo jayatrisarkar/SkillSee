@@ -20,9 +20,13 @@ function NativeTabLayout() {
         <Icon sf={{ default: "magnifyingglass", selected: "magnifyingglass.circle.fill" }} />
         <Label>Search</Label>
       </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="categories">
-        <Icon sf={{ default: "square.grid.2x2", selected: "square.grid.2x2.fill" }} />
-        <Label>Categories</Label>
+      <NativeTabs.Trigger name="insights">
+        <Icon sf={{ default: "chart.bar.xaxis", selected: "chart.bar.xaxis.ascending.fill" }} />
+        <Label>Insights</Label>
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="profile">
+        <Icon sf={{ default: "person.circle", selected: "person.circle.fill" }} />
+        <Label>Profile</Label>
       </NativeTabs.Trigger>
     </NativeTabs>
   );
@@ -53,13 +57,11 @@ function ClassicTabLayout() {
           isIOS ? (
             <BlurView
               intensity={80}
-              tint={isDark ? "dark" : "dark"}
+              tint="dark"
               style={StyleSheet.absoluteFill}
             />
           ) : isWeb ? (
-            <View
-              style={[StyleSheet.absoluteFill, { backgroundColor: colors.card }]}
-            />
+            <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.card }]} />
           ) : null,
       }}
     >
@@ -88,15 +90,33 @@ function ClassicTabLayout() {
         }}
       />
       <Tabs.Screen
-        name="categories"
+        name="insights"
         options={{
-          title: "Categories",
+          title: "Insights",
           tabBarIcon: ({ color }) =>
             isIOS ? (
-              <SymbolView name="square.grid.2x2" tintColor={color} size={24} />
+              <SymbolView name="chart.bar.xaxis" tintColor={color} size={24} />
             ) : (
-              <Ionicons name="grid-outline" size={22} color={color} />
+              <Ionicons name="bar-chart-outline" size={22} color={color} />
             ),
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: "Profile",
+          tabBarIcon: ({ color }) =>
+            isIOS ? (
+              <SymbolView name="person.circle" tintColor={color} size={24} />
+            ) : (
+              <Ionicons name="person-circle-outline" size={22} color={color} />
+            ),
+        }}
+      />
+      <Tabs.Screen
+        name="categories"
+        options={{
+          href: null,
         }}
       />
     </Tabs>

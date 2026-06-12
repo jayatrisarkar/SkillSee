@@ -1,0 +1,2 @@
+- [Expo app stack](expo-app-stack.md) — Content Library mobile app: Expo SDK 54, expo-router, AsyncStorage, SVG charts, local-only storage (no backend).
+- [Hidden tabs pattern](hidden-tabs.md) — Use `href: null` in Tabs.Screen options to keep a route accessible via push() but hidden from the tab bar.

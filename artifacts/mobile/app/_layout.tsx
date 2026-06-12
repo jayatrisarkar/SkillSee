@@ -15,6 +15,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { LibraryProvider } from "@/context/LibraryContext";
+import { ProfileProvider } from "@/context/ProfileContext";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -24,22 +25,12 @@ function RootLayoutNav() {
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      <Stack.Screen
-        name="add"
-        options={{ presentation: "modal", headerShown: false }}
-      />
-      <Stack.Screen
-        name="new-category"
-        options={{ presentation: "modal", headerShown: false }}
-      />
-      <Stack.Screen
-        name="content/[id]"
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen
-        name="category/[id]"
-        options={{ headerShown: false }}
-      />
+      <Stack.Screen name="add" options={{ presentation: "modal", headerShown: false }} />
+      <Stack.Screen name="new-category" options={{ presentation: "modal", headerShown: false }} />
+      <Stack.Screen name="edit-profile" options={{ presentation: "modal", headerShown: false }} />
+      <Stack.Screen name="content/[id]" options={{ headerShown: false }} />
+      <Stack.Screen name="category/[id]" options={{ headerShown: false }} />
+
     </Stack>
   );
 }
@@ -66,9 +57,11 @@ export default function RootLayout() {
         <QueryClientProvider client={queryClient}>
           <GestureHandlerRootView style={{ flex: 1 }}>
             <KeyboardProvider>
-              <LibraryProvider>
-                <RootLayoutNav />
-              </LibraryProvider>
+              <ProfileProvider>
+                <LibraryProvider>
+                  <RootLayoutNav />
+                </LibraryProvider>
+              </ProfileProvider>
             </KeyboardProvider>
           </GestureHandlerRootView>
         </QueryClientProvider>

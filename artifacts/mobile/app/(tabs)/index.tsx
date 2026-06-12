@@ -5,6 +5,7 @@ import React, { useMemo } from "react";
 import {
   FlatList,
   Platform,
+  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -16,18 +17,34 @@ import { CategoryCard } from "@/components/CategoryCard";
 import { ContentCard } from "@/components/ContentCard";
 import { EmptyState } from "@/components/EmptyState";
 import { useLibrary } from "@/context/LibraryContext";
+import { useProfile } from "@/context/ProfileContext";
 import { useColors } from "@/hooks/useColors";
+import { computeStats, generateInsights } from "@/utils/insights";
+
+function getGreeting(): string {
+  const h = new Date().getHours();
+  if (h < 12) return "Good morning";
+  if (h < 17) return "Good afternoon";
+  return "Good evening";
+}
 
 export default function LibraryScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { categories, items, deleteItem } = useLibrary();
+  const { profile } = useProfile();
+
+  const topInset = Platform.OS === "web" ? 67 : insets.top;
 
   const recentItems = useMemo(
-    () => items.filter((it) => !it.isArchived).slice(0, 10),
+    () => items.filter((it) => !it.isArchived).slice(0, 8),
     [items]
   );
+
+  const stats = useMemo(() => computeStats(items, categories), [items, categories]);
+  const insights = useMemo(() => generateInsights(stats, items, categories), [stats, items, categories]);
+  const topInsight = insights[0];
 
   const categoryData = useMemo(
     () =>
@@ -38,84 +55,164 @@ export default function LibraryScreen() {
     [categories, items]
   );
 
-  const topInset = Platform.OS === "web" ? 67 : insets.top;
+  const inProgressItems = useMemo(
+    () => items.filter((it) => it.status === "learning" && !it.isArchived).slice(0, 3),
+    [items]
+  );
+
+  const firstName = profile.name.split(" ")[0];
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <FlatList
-        data={recentItems}
-        keyExtractor={(item) => item.id}
+      <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[
           styles.content,
           {
-            paddingTop: topInset + 16,
-            paddingBottom: Platform.OS === "web" ? 34 + 84 : insets.bottom + 100,
+            paddingTop: topInset + 12,
+            paddingBottom: Platform.OS === "web" ? 34 + 84 + 16 : insets.bottom + 100,
           },
         ]}
-        ListHeaderComponent={
-          <View>
-            <View style={styles.headerRow}>
-              <View>
-                <Text style={[styles.greeting, { color: colors.mutedForeground }]}>
-                  Your Vault
-                </Text>
-                <Text style={[styles.title, { color: colors.foreground }]}>
-                  My Library
-                </Text>
-              </View>
-              <View style={[styles.totalBadge, { backgroundColor: colors.secondary }]}>
-                <Text style={[styles.totalText, { color: colors.mutedForeground }]}>
-                  {items.filter((it) => !it.isArchived).length} saved
-                </Text>
-              </View>
-            </View>
-
-            <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>
-              CATEGORIES
+      >
+        <View style={styles.headerRow}>
+          <View style={styles.greetingBlock}>
+            <Text style={[styles.greeting, { color: colors.mutedForeground }]}>
+              {getGreeting()}, {firstName} 👋
             </Text>
-            <FlatList
-              data={categoryData}
-              keyExtractor={(c) => c.id}
-              numColumns={2}
-              scrollEnabled={false}
-              columnWrapperStyle={styles.catRow}
-              contentContainerStyle={styles.catGrid}
-              renderItem={({ item: cat }) => (
-                <CategoryCard
-                  name={cat.name}
-                  icon={cat.icon}
-                  color={cat.color}
-                  count={cat.count}
-                  onPress={() => router.push(`/category/${cat.id}`)}
-                />
-              )}
-            />
-
-            {recentItems.length > 0 && (
-              <Text style={[styles.sectionLabel, { color: colors.mutedForeground, marginTop: 24 }]}>
-                RECENTLY SAVED
-              </Text>
-            )}
+            <Text style={[styles.title, { color: colors.foreground }]}>My Library</Text>
           </View>
-        }
-        renderItem={({ item }) => {
-          const cat = categories.find((c) => c.id === item.categoryId);
-          return (
-            <ContentCard
-              item={item}
-              categoryColor={cat?.color}
-              categoryName={cat?.name}
-              showCategory
-              onPress={() => router.push(`/content/${item.id}`)}
-              onDelete={() => {
-                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-                deleteItem(item.id);
-              }}
-            />
-          );
-        }}
-        ListEmptyComponent={
+          <TouchableOpacity
+            onPress={() => router.push("/(tabs)/profile")}
+            activeOpacity={0.8}
+          >
+            <View style={[styles.avatarSmall, { backgroundColor: colors.primary + "33" }]}>
+              <Text style={[styles.avatarInitials, { color: colors.primary }]}>
+                {profile.name.split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase() || "?"}
+              </Text>
+            </View>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.quickStats}>
+          <View style={[styles.quickStatPill, { backgroundColor: "#EF444422", borderColor: "#EF444433" }]}>
+            <Ionicons name="flame" size={14} color="#EF4444" />
+            <Text style={[styles.quickStatText, { color: "#EF4444" }]}>
+              {stats.streak}d streak
+            </Text>
+          </View>
+          <View style={[styles.quickStatPill, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
+            <Ionicons name="bookmark-outline" size={14} color={colors.mutedForeground} />
+            <Text style={[styles.quickStatText, { color: colors.mutedForeground }]}>
+              {stats.savesThisWeek} this week
+            </Text>
+          </View>
+          <View style={[styles.quickStatPill, { backgroundColor: "#10B98122", borderColor: "#10B98133" }]}>
+            <Ionicons name="checkmark-circle-outline" size={14} color="#10B981" />
+            <Text style={[styles.quickStatText, { color: "#10B981" }]}>
+              {stats.totalCompleted} done
+            </Text>
+          </View>
+        </View>
+
+        {topInsight && (
+          <TouchableOpacity
+            style={[styles.insightBanner, { backgroundColor: colors.card, borderColor: colors.primary + "44" }]}
+            onPress={() => router.push("/(tabs)/insights")}
+            activeOpacity={0.85}
+          >
+            <View style={[styles.insightIconWrap, { backgroundColor: colors.primary + "22" }]}>
+              <Ionicons name="bulb-outline" size={20} color={colors.primary} />
+            </View>
+            <Text style={[styles.insightBannerText, { color: colors.foreground }]} numberOfLines={2}>
+              {topInsight}
+            </Text>
+            <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
+          </TouchableOpacity>
+        )}
+
+        {inProgressItems.length > 0 && (
+          <View>
+            <View style={styles.rowHeader}>
+              <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>CONTINUE LEARNING</Text>
+              <TouchableOpacity onPress={() => router.push("/(tabs)/search")}>
+                <Text style={[styles.seeAll, { color: colors.primary }]}>See all</Text>
+              </TouchableOpacity>
+            </View>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.inProgressRow}>
+              {inProgressItems.map((item) => {
+                const cat = categories.find((c) => c.id === item.categoryId);
+                return (
+                  <TouchableOpacity
+                    key={item.id}
+                    style={[styles.inProgressCard, { backgroundColor: colors.card, borderColor: cat?.color + "55" ?? colors.border }]}
+                    onPress={() => router.push(`/content/${item.id}`)}
+                    activeOpacity={0.8}
+                  >
+                    <View style={[styles.inProgressAccent, { backgroundColor: cat?.color ?? colors.primary }]} />
+                    <View style={styles.inProgressContent}>
+                      <Text style={[styles.inProgressTitle, { color: colors.foreground }]} numberOfLines={2}>
+                        {item.title}
+                      </Text>
+                      <Text style={[styles.inProgressCat, { color: cat?.color ?? colors.primary }]}>
+                        {cat?.name}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+        )}
+
+        <View style={styles.rowHeader}>
+          <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>CATEGORIES</Text>
+          <TouchableOpacity onPress={() => router.push("/categories")}>
+            <Text style={[styles.seeAll, { color: colors.primary }]}>Manage</Text>
+          </TouchableOpacity>
+        </View>
+        <View style={styles.catGrid}>
+          {categoryData.map((cat) => (
+            <View key={cat.id} style={styles.catCardWrap}>
+              <CategoryCard
+                name={cat.name}
+                icon={cat.icon}
+                color={cat.color}
+                count={cat.count}
+                onPress={() => router.push(`/category/${cat.id}`)}
+              />
+            </View>
+          ))}
+        </View>
+
+        {recentItems.length > 0 && (
+          <View>
+            <View style={styles.rowHeader}>
+              <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>RECENTLY SAVED</Text>
+              <TouchableOpacity onPress={() => router.push("/(tabs)/search")}>
+                <Text style={[styles.seeAll, { color: colors.primary }]}>See all</Text>
+              </TouchableOpacity>
+            </View>
+            {recentItems.map((item) => {
+              const cat = categories.find((c) => c.id === item.categoryId);
+              return (
+                <ContentCard
+                  key={item.id}
+                  item={item}
+                  categoryColor={cat?.color}
+                  categoryName={cat?.name}
+                  showCategory
+                  onPress={() => router.push(`/content/${item.id}`)}
+                  onDelete={() => {
+                    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+                    deleteItem(item.id);
+                  }}
+                />
+              );
+            })}
+          </View>
+        )}
+
+        {items.length === 0 && (
           <EmptyState
             icon="archive-outline"
             title="Your vault is empty"
@@ -123,11 +220,17 @@ export default function LibraryScreen() {
             actionLabel="Save Your First Item"
             onAction={() => router.push("/add")}
           />
-        }
-      />
+        )}
+      </ScrollView>
 
       <TouchableOpacity
-        style={[styles.fab, { backgroundColor: colors.primary, bottom: Platform.OS === "web" ? 34 + 84 + 16 : insets.bottom + 100 }]}
+        style={[
+          styles.fab,
+          {
+            backgroundColor: colors.primary,
+            bottom: Platform.OS === "web" ? 34 + 84 + 16 : insets.bottom + 100,
+          },
+        ]}
         onPress={() => {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
           router.push("/add");
@@ -142,41 +245,72 @@ export default function LibraryScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  content: { paddingHorizontal: 16 },
+  content: { paddingHorizontal: 16, gap: 16 },
   headerRow: {
     flexDirection: "row",
     justifyContent: "space-between",
+    alignItems: "flex-start",
+  },
+  greetingBlock: { gap: 2 },
+  greeting: { fontSize: 13, fontFamily: "Inter_500Medium", letterSpacing: 0.2 },
+  title: { fontSize: 28, fontFamily: "Inter_700Bold", letterSpacing: -0.5 },
+  avatarSmall: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
     alignItems: "center",
-    marginBottom: 24,
+    justifyContent: "center",
   },
-  greeting: {
-    fontSize: 13,
-    fontFamily: "Inter_500Medium",
-    letterSpacing: 0.3,
-    marginBottom: 2,
-  },
-  title: {
-    fontSize: 28,
-    fontFamily: "Inter_700Bold",
-    letterSpacing: -0.5,
-  },
-  totalBadge: {
+  avatarInitials: { fontSize: 16, fontFamily: "Inter_700Bold" },
+  quickStats: { flexDirection: "row", gap: 8, flexWrap: "wrap" },
+  quickStatPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
     paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingVertical: 7,
     borderRadius: 20,
+    borderWidth: 1,
   },
-  totalText: {
-    fontSize: 13,
-    fontFamily: "Inter_500Medium",
+  quickStatText: { fontSize: 13, fontFamily: "Inter_600SemiBold" },
+  insightBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    padding: 14,
+    borderRadius: 14,
+    borderWidth: 1,
   },
-  sectionLabel: {
-    fontSize: 11,
-    fontFamily: "Inter_600SemiBold",
-    letterSpacing: 1,
-    marginBottom: 12,
+  insightIconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
   },
-  catGrid: { gap: 10 },
-  catRow: { gap: 10 },
+  insightBannerText: { flex: 1, fontSize: 14, fontFamily: "Inter_500Medium", lineHeight: 20 },
+  rowHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: -6,
+  },
+  sectionLabel: { fontSize: 11, fontFamily: "Inter_600SemiBold", letterSpacing: 1 },
+  seeAll: { fontSize: 13, fontFamily: "Inter_500Medium" },
+  inProgressRow: { gap: 12, paddingVertical: 4 },
+  inProgressCard: {
+    width: 180,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    flexDirection: "row",
+    overflow: "hidden",
+  },
+  inProgressAccent: { width: 4 },
+  inProgressContent: { flex: 1, padding: 12, gap: 6 },
+  inProgressTitle: { fontSize: 13, fontFamily: "Inter_600SemiBold", lineHeight: 18 },
+  inProgressCat: { fontSize: 11, fontFamily: "Inter_500Medium" },
+  catGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
+  catCardWrap: { width: "48%" },
   fab: {
     position: "absolute",
     right: 20,
