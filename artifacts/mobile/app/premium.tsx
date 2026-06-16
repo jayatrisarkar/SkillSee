@@ -15,67 +15,100 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useColors } from "@/hooks/useColors";
 
-const FEATURES = [
-  {
-    icon: "cloud-outline" as const,
-    color: "#6366F1",
-    title: "Cloud Sync",
-    description: "Your library backed up and synced across all your devices automatically.",
-    badge: null,
-  },
-  {
-    icon: "sparkles-outline" as const,
-    color: "#A855F7",
-    title: "AI Features",
-    description: "Smart auto-categorization, content summaries, and personalized learning paths.",
-    badge: "Coming Soon",
-  },
-  {
-    icon: "albums-outline" as const,
-    color: "#EC4899",
-    title: "Advanced Organization",
-    description: "Unlimited categories, nested folders, custom tags, and powerful filters.",
-    badge: null,
-  },
-  {
-    icon: "analytics-outline" as const,
-    color: "#10B981",
-    title: "Deep Insights",
-    description: "Detailed progress reports, learning trends, and weekly skill reports.",
-    badge: "Coming Soon",
-  },
-  {
-    icon: "people-outline" as const,
-    color: "#F59E0B",
-    title: "Shared Playlists",
-    description: "Collaborate and share curated playlists with friends, teams, or followers.",
-    badge: "Coming Soon",
-  },
-  {
-    icon: "download-outline" as const,
-    color: "#22D3EE",
-    title: "Export & Backup",
-    description: "Export your full library to JSON, CSV, or PDF anytime.",
-    badge: null,
-  },
-];
-
 const PLANS = [
   {
     id: "monthly",
     label: "Monthly",
-    price: "$4.99",
+    price: "$2.99",
     per: "/ month",
+    subtext: "Billed monthly",
     note: null,
     highlight: false,
   },
   {
-    id: "annual",
-    label: "Annual",
-    price: "$29.99",
+    id: "yearly",
+    label: "Yearly",
+    price: "$24.99",
     per: "/ year",
-    note: "Save 50%",
+    subtext: "$2.08 / month",
+    note: "Save 30%",
     highlight: true,
+  },
+  {
+    id: "lifetime",
+    label: "Lifetime",
+    price: "$44.99",
+    per: "once",
+    subtext: "Pay once, own forever",
+    note: "Best Value",
+    highlight: false,
+  },
+];
+
+const FREE_FEATURES = [
+  { icon: "bookmark-outline" as const, color: "#6366F1", text: "Save unlimited links & videos" },
+  { icon: "grid-outline" as const, color: "#6366F1", text: "Up to 5 custom categories" },
+  { icon: "search-outline" as const, color: "#6366F1", text: "Basic search" },
+  { icon: "bar-chart-outline" as const, color: "#6366F1", text: "Basic progress tracking" },
+];
+
+const PREMIUM_NOW = [
+  {
+    icon: "cloud-outline" as const,
+    color: "#6366F1",
+    title: "Cloud Backup",
+    description: "Your library safely backed up. Never lose your saved content.",
+  },
+  {
+    icon: "phone-portrait-outline" as const,
+    color: "#8B5CF6",
+    title: "Cross-Device Sync",
+    description: "Access your library on any phone or tablet, instantly synced.",
+  },
+  {
+    icon: "albums-outline" as const,
+    color: "#A855F7",
+    title: "Unlimited Categories",
+    description: "Organize without limits — as many custom categories as you need.",
+  },
+  {
+    icon: "options-outline" as const,
+    color: "#EC4899",
+    title: "Advanced Filters",
+    description: "Filter by date, status, platform, category, and more.",
+  },
+  {
+    icon: "download-outline" as const,
+    color: "#10B981",
+    title: "Export Library",
+    description: "Export your full library as JSON, CSV, or PDF anytime.",
+  },
+];
+
+const PREMIUM_SOON = [
+  {
+    icon: "sparkles-outline" as const,
+    color: "#F59E0B",
+    title: "AI Auto-Categorization",
+    description: "AI reads your saved links and sorts them into the right categories automatically.",
+  },
+  {
+    icon: "document-text-outline" as const,
+    color: "#F97316",
+    title: "AI Summaries",
+    description: "Get a quick AI-written summary of any video or article you save.",
+  },
+  {
+    icon: "bulb-outline" as const,
+    color: "#EF4444",
+    title: "AI Learning Recommendations",
+    description: "Personalized suggestions based on what you're learning and your goals.",
+  },
+  {
+    icon: "search-circle-outline" as const,
+    color: "#22D3EE",
+    title: "Smart Search",
+    description: "Search inside video transcripts and article content, not just titles.",
   },
 ];
 
@@ -84,15 +117,16 @@ export default function PremiumScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const topInset = Platform.OS === "web" ? 20 : insets.top;
-  const [selectedPlan, setSelectedPlan] = useState<"monthly" | "annual">("annual");
+  const [selectedPlan, setSelectedPlan] = useState<string>("yearly");
 
   function handleUpgrade() {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   }
 
+  const selected = PLANS.find((p) => p.id === selectedPlan)!;
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Close button */}
       <TouchableOpacity
         style={[styles.closeBtn, { top: topInset + 12 }]}
         onPress={() => router.back()}
@@ -119,79 +153,122 @@ export default function PremiumScreen() {
         </LinearGradient>
 
         <Text style={[styles.heroTitle, { color: colors.foreground }]}>
-          SkillSee{" "}
-          <Text style={styles.heroTitleGradient}>Premium</Text>
+          SkillSee <Text style={styles.heroAccent}>Premium</Text>
         </Text>
         <Text style={[styles.heroSubtitle, { color: colors.mutedForeground }]}>
-          Level up your learning. Unlock everything.
+          Affordable for students. Powerful for everyone.
         </Text>
 
         {/* Plan selector */}
-        <View style={[styles.planRow, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
+        <View style={styles.planRow}>
           {PLANS.map((plan) => {
             const active = selectedPlan === plan.id;
             return (
               <TouchableOpacity
                 key={plan.id}
                 style={[
-                  styles.planBtn,
-                  active && styles.planBtnActive,
-                  active && { backgroundColor: colors.primary },
+                  styles.planCard,
+                  { backgroundColor: colors.card, borderColor: active ? colors.primary : colors.border },
+                  active && styles.planCardActive,
                 ]}
                 onPress={() => {
-                  setSelectedPlan(plan.id as "monthly" | "annual");
+                  setSelectedPlan(plan.id);
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                 }}
                 activeOpacity={0.85}
               >
                 {plan.note && (
-                  <View style={styles.saveBadge}>
-                    <Text style={styles.saveBadgeText}>{plan.note}</Text>
+                  <View style={[styles.noteBadge, { backgroundColor: plan.id === "yearly" ? "#10B981" : "#F59E0B" }]}>
+                    <Text style={styles.noteBadgeText}>{plan.note}</Text>
                   </View>
                 )}
-                <Text style={[styles.planLabel, { color: active ? "#FFFFFF" : colors.mutedForeground }]}>
+                <Text style={[styles.planLabel, { color: active ? colors.primary : colors.mutedForeground }]}>
                   {plan.label}
                 </Text>
-                <Text style={[styles.planPrice, { color: active ? "#FFFFFF" : colors.foreground }]}>
-                  {plan.price}
-                </Text>
-                <Text style={[styles.planPer, { color: active ? "#FFFFFF99" : colors.mutedForeground }]}>
-                  {plan.per}
-                </Text>
+                <Text style={[styles.planPrice, { color: colors.foreground }]}>{plan.price}</Text>
+                <Text style={[styles.planPer, { color: colors.mutedForeground }]}>{plan.per}</Text>
+                <Text style={[styles.planSubtext, { color: colors.mutedForeground }]}>{plan.subtext}</Text>
+                {active && (
+                  <View style={[styles.checkDot, { backgroundColor: colors.primary }]}>
+                    <Ionicons name="checkmark" size={10} color="#FFFFFF" />
+                  </View>
+                )}
               </TouchableOpacity>
             );
           })}
         </View>
 
-        {/* Features */}
-        <Text style={[styles.featuresLabel, { color: colors.mutedForeground }]}>WHAT YOU GET</Text>
+        {/* Free tier */}
+        <View style={[styles.section, { borderColor: colors.border }]}>
+          <View style={styles.sectionHeader}>
+            <View style={[styles.tierBadge, { backgroundColor: colors.secondary }]}>
+              <Text style={[styles.tierBadgeText, { color: colors.mutedForeground }]}>FREE</Text>
+            </View>
+            <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Always included</Text>
+          </View>
+          {FREE_FEATURES.map((f) => (
+            <View key={f.text} style={styles.simpleRow}>
+              <Ionicons name="checkmark-circle" size={16} color="#10B981" />
+              <Text style={[styles.simpleText, { color: colors.mutedForeground }]}>{f.text}</Text>
+            </View>
+          ))}
+        </View>
+
+        {/* Premium now */}
+        <View style={styles.sectionHeader}>
+          <LinearGradient colors={["#6366F1", "#A855F7"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.tierBadgePremium}>
+            <Text style={styles.tierBadgeTextPremium}>PREMIUM</Text>
+          </LinearGradient>
+          <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Available now</Text>
+        </View>
         <View style={[styles.featuresList, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          {FEATURES.map((feat, i) => (
+          {PREMIUM_NOW.map((feat, i) => (
             <View
               key={feat.title}
               style={[
                 styles.featureRow,
                 { borderBottomColor: colors.border },
-                i === FEATURES.length - 1 && styles.featureRowLast,
+                i === PREMIUM_NOW.length - 1 && styles.featureRowLast,
               ]}
             >
               <View style={[styles.featureIcon, { backgroundColor: feat.color + "18" }]}>
                 <Ionicons name={feat.icon} size={20} color={feat.color} />
               </View>
               <View style={styles.featureText}>
-                <View style={styles.featureTitleRow}>
-                  <Text style={[styles.featureTitle, { color: colors.foreground }]}>{feat.title}</Text>
-                  {feat.badge && (
-                    <View style={[styles.comingSoonBadge, { backgroundColor: colors.primary + "22" }]}>
-                      <Text style={[styles.comingSoonText, { color: colors.primary }]}>{feat.badge}</Text>
-                    </View>
-                  )}
-                </View>
-                <Text style={[styles.featureDesc, { color: colors.mutedForeground }]}>
-                  {feat.description}
-                </Text>
+                <Text style={[styles.featureTitle, { color: colors.foreground }]}>{feat.title}</Text>
+                <Text style={[styles.featureDesc, { color: colors.mutedForeground }]}>{feat.description}</Text>
               </View>
               <Ionicons name="checkmark-circle" size={18} color="#10B981" />
+            </View>
+          ))}
+        </View>
+
+        {/* AI features coming soon */}
+        <View style={styles.sectionHeader}>
+          <View style={[styles.tierBadgeAI, { backgroundColor: "#F59E0B22" }]}>
+            <Ionicons name="sparkles" size={10} color="#F59E0B" />
+            <Text style={[styles.tierBadgeAIText, { color: "#F59E0B" }]}>AI · COMING SOON</Text>
+          </View>
+          <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Included when ready</Text>
+        </View>
+        <View style={[styles.featuresList, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          {PREMIUM_SOON.map((feat, i) => (
+            <View
+              key={feat.title}
+              style={[
+                styles.featureRow,
+                { borderBottomColor: colors.border },
+                i === PREMIUM_SOON.length - 1 && styles.featureRowLast,
+              ]}
+            >
+              <View style={[styles.featureIcon, { backgroundColor: feat.color + "18" }]}>
+                <Ionicons name={feat.icon} size={20} color={feat.color} />
+              </View>
+              <View style={styles.featureText}>
+                <Text style={[styles.featureTitle, { color: colors.foreground }]}>{feat.title}</Text>
+                <Text style={[styles.featureDesc, { color: colors.mutedForeground }]}>{feat.description}</Text>
+              </View>
+              <Ionicons name="time-outline" size={18} color={colors.mutedForeground} />
             </View>
           ))}
         </View>
@@ -206,24 +283,17 @@ export default function PremiumScreen() {
           >
             <Ionicons name="diamond-outline" size={18} color="#FFFFFF" />
             <Text style={styles.ctaBtnText}>
-              Upgrade to Premium ·{" "}
-              {selectedPlan === "annual" ? "$29.99/yr" : "$4.99/mo"}
+              Start Premium · {selected.price} {selected.id === "lifetime" ? "lifetime" : selected.per}
             </Text>
           </LinearGradient>
         </TouchableOpacity>
 
         <Text style={[styles.legalText, { color: colors.mutedForeground }]}>
-          Cancel anytime. Secure payment via App Store or Google Play.{"\n"}
-          Prices shown in USD.
+          {selected.id !== "lifetime"
+            ? "Cancel anytime. Renews automatically."
+            : "One-time payment. No subscription, no renewal."}{"\n"}
+          Secure payment via App Store or Google Play · Prices in USD.
         </Text>
-
-        {/* Free tier reminder */}
-        <View style={[styles.freeCard, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
-          <Ionicons name="checkmark-outline" size={16} color={colors.mutedForeground} />
-          <Text style={[styles.freeCardText, { color: colors.mutedForeground }]}>
-            Free plan keeps all your current saves — upgrade to unlock the rest.
-          </Text>
-        </View>
       </ScrollView>
     </View>
   );
@@ -241,7 +311,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  content: { paddingHorizontal: 20, gap: 20, alignItems: "center" },
+  content: { paddingHorizontal: 20, gap: 18, alignItems: "center" },
 
   heroBadge: {
     width: 72,
@@ -251,72 +321,65 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     marginBottom: 4,
   },
-  heroTitle: { fontSize: 30, fontFamily: "Inter_700Bold", letterSpacing: -0.8, textAlign: "center" },
-  heroTitleGradient: { color: "#A855F7" },
-  heroSubtitle: { fontSize: 15, fontFamily: "Inter_400Regular", textAlign: "center", lineHeight: 22, marginBottom: 4 },
+  heroTitle: { fontSize: 28, fontFamily: "Inter_700Bold", letterSpacing: -0.8, textAlign: "center" },
+  heroAccent: { color: "#A855F7" },
+  heroSubtitle: { fontSize: 14, fontFamily: "Inter_400Regular", textAlign: "center", lineHeight: 20, marginBottom: 2 },
 
-  planRow: {
-    flexDirection: "row",
-    borderRadius: 16,
-    borderWidth: 1,
-    padding: 6,
-    gap: 6,
-    alignSelf: "stretch",
-  },
-  planBtn: {
+  planRow: { flexDirection: "row", gap: 10, alignSelf: "stretch" },
+  planCard: {
     flex: 1,
     alignItems: "center",
     paddingVertical: 14,
-    borderRadius: 12,
+    paddingHorizontal: 6,
+    borderRadius: 14,
+    borderWidth: 1.5,
     gap: 2,
     position: "relative",
   },
-  planBtnActive: { shadowColor: "#6366F1", shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 4 },
-  saveBadge: {
+  planCardActive: { shadowColor: "#6366F1", shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.25, shadowRadius: 8, elevation: 4 },
+  noteBadge: {
     position: "absolute",
     top: -10,
-    backgroundColor: "#10B981",
-    paddingHorizontal: 8,
+    paddingHorizontal: 7,
     paddingVertical: 2,
     borderRadius: 8,
   },
-  saveBadgeText: { color: "#FFFFFF", fontSize: 10, fontFamily: "Inter_700Bold" },
-  planLabel: { fontSize: 12, fontFamily: "Inter_600SemiBold" },
-  planPrice: { fontSize: 22, fontFamily: "Inter_700Bold" },
-  planPer: { fontSize: 11, fontFamily: "Inter_400Regular" },
-
-  featuresLabel: {
-    alignSelf: "flex-start",
-    fontSize: 11,
-    fontFamily: "Inter_600SemiBold",
-    letterSpacing: 0.8,
-  },
-  featuresList: {
-    alignSelf: "stretch",
-    borderRadius: 16,
-    borderWidth: 1,
-    overflow: "hidden",
-  },
-  featureRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    padding: 14,
-    borderBottomWidth: 1,
-  },
-  featureRowLast: { borderBottomWidth: 0 },
-  featureIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
+  noteBadgeText: { color: "#FFFFFF", fontSize: 9, fontFamily: "Inter_700Bold" },
+  planLabel: { fontSize: 11, fontFamily: "Inter_600SemiBold" },
+  planPrice: { fontSize: 18, fontFamily: "Inter_700Bold", marginTop: 2 },
+  planPer: { fontSize: 10, fontFamily: "Inter_400Regular" },
+  planSubtext: { fontSize: 9, fontFamily: "Inter_400Regular", textAlign: "center" },
+  checkDot: {
+    position: "absolute",
+    top: 8,
+    right: 8,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
   },
+
+  section: { alignSelf: "stretch", borderRadius: 14, borderWidth: 1, padding: 14, gap: 10 },
+  sectionHeader: { flexDirection: "row", alignItems: "center", gap: 10, alignSelf: "stretch" },
+  sectionTitle: { fontSize: 14, fontFamily: "Inter_600SemiBold" },
+
+  tierBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
+  tierBadgeText: { fontSize: 10, fontFamily: "Inter_700Bold", letterSpacing: 0.5 },
+  tierBadgePremium: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
+  tierBadgeTextPremium: { color: "#FFFFFF", fontSize: 10, fontFamily: "Inter_700Bold", letterSpacing: 0.5 },
+  tierBadgeAI: { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
+  tierBadgeAIText: { fontSize: 10, fontFamily: "Inter_700Bold", letterSpacing: 0.5 },
+
+  simpleRow: { flexDirection: "row", alignItems: "center", gap: 10 },
+  simpleText: { fontSize: 13, fontFamily: "Inter_400Regular", flex: 1 },
+
+  featuresList: { alignSelf: "stretch", borderRadius: 14, borderWidth: 1, overflow: "hidden" },
+  featureRow: { flexDirection: "row", alignItems: "center", gap: 12, padding: 14, borderBottomWidth: 1 },
+  featureRowLast: { borderBottomWidth: 0 },
+  featureIcon: { width: 40, height: 40, borderRadius: 12, alignItems: "center", justifyContent: "center" },
   featureText: { flex: 1, gap: 2 },
-  featureTitleRow: { flexDirection: "row", alignItems: "center", gap: 8 },
   featureTitle: { fontSize: 14, fontFamily: "Inter_600SemiBold" },
-  comingSoonBadge: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 },
-  comingSoonText: { fontSize: 9, fontFamily: "Inter_700Bold", letterSpacing: 0.3 },
   featureDesc: { fontSize: 12, fontFamily: "Inter_400Regular", lineHeight: 17 },
 
   ctaWrap: { alignSelf: "stretch" },
@@ -328,23 +391,13 @@ const styles = StyleSheet.create({
     paddingVertical: 18,
     borderRadius: 16,
   },
-  ctaBtnText: { color: "#FFFFFF", fontSize: 16, fontFamily: "Inter_700Bold" },
+  ctaBtnText: { color: "#FFFFFF", fontSize: 15, fontFamily: "Inter_700Bold" },
 
   legalText: {
     fontSize: 11,
     fontFamily: "Inter_400Regular",
     textAlign: "center",
     lineHeight: 17,
-    marginTop: -8,
+    marginTop: -6,
   },
-  freeCard: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 10,
-    padding: 14,
-    borderRadius: 12,
-    borderWidth: 1,
-    alignSelf: "stretch",
-  },
-  freeCardText: { flex: 1, fontSize: 13, fontFamily: "Inter_400Regular", lineHeight: 18 },
 });
