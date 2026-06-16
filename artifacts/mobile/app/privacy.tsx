@@ -6,7 +6,6 @@ import {
   Platform,
   ScrollView,
   StyleSheet,
-  Switch,
   Text,
   TouchableOpacity,
   View,
@@ -15,7 +14,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useLibrary } from "@/context/LibraryContext";
-import { useColors } from "@/context/ThemeContext";
+import { useColors } from "@/hooks/useColors";
 
 const PROFILE_KEY = "@library:profile";
 const ONBOARDED_KEY = "@skillflow:onboarded";

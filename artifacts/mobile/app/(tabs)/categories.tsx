@@ -132,14 +132,14 @@ export default function CategoriesScreen() {
               <View style={styles.rowActions}>
                 <TouchableOpacity
                   onPress={() => router.push(`/category/${cat.id}?edit=1`)}
-                  hitSlop={{ top: 12, right: 12, bottom: 12, left: 12 }}
+                  activeOpacity={0.6}
                   style={styles.actionBtn}
                 >
                   <Ionicons name="pencil-outline" size={18} color={colors.mutedForeground} />
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={() => handleDelete(cat)}
-                  hitSlop={{ top: 12, right: 12, bottom: 12, left: 12 }}
+                  activeOpacity={0.6}
                   style={styles.actionBtn}
                 >
                   <Ionicons name="trash-outline" size={18} color={colors.destructive} />
@@ -180,7 +180,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderRadius: 14,
     borderWidth: 1,
-    overflow: "hidden",
   },
   rowLeft: {
     flex: 1,
@@ -212,6 +211,6 @@ const styles = StyleSheet.create({
     paddingRight: 14,
   },
   actionBtn: {
-    padding: 4,
+    padding: 10,
   },
 });
