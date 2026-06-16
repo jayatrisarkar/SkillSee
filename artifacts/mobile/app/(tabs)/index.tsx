@@ -199,22 +199,6 @@ export default function LibraryScreen() {
         )}
       </ScrollView>
 
-      <TouchableOpacity
-        style={[
-          styles.fab,
-          {
-            backgroundColor: colors.primary,
-            bottom: Platform.OS === "web" ? 34 + 84 + 16 : insets.bottom + 100,
-          },
-        ]}
-        onPress={() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          router.push("/add");
-        }}
-        activeOpacity={0.85}
-      >
-        <Ionicons name="add" size={28} color="#FFFFFF" />
-      </TouchableOpacity>
     </View>
   );
 }

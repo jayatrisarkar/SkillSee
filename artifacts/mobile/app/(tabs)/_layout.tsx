@@ -5,12 +5,10 @@ import { Icon, Label, NativeTabs } from "expo-router/unstable-native-tabs";
 import { SymbolView } from "expo-symbols";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import React from "react";
 import {
   Platform,
   StyleSheet,
-  Text,
   TouchableOpacity,
   View,
   useColorScheme,
@@ -18,112 +16,6 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useColors } from "@/hooks/useColors";
-
-const TAB_ICONS: Record<string, { outline: string; filled: string; label: string }> = {
-  index:    { outline: "library-outline",       filled: "library",           label: "Library" },
-  search:   { outline: "search-outline",        filled: "search",            label: "Search" },
-  insights: { outline: "bar-chart-outline",     filled: "bar-chart",         label: "Insights" },
-  profile:  { outline: "person-circle-outline", filled: "person-circle",     label: "Profile" },
-};
-
-function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
-  const colors = useColors();
-  const insets = useSafeAreaInsets();
-  const router = useRouter();
-  const colorScheme = useColorScheme();
-  const isIOS = Platform.OS === "ios";
-  const isWeb = Platform.OS === "web";
-  const bottomPad = isWeb ? 16 : insets.bottom || 12;
-
-  return (
-    <View style={[styles.tabBar, { paddingBottom: bottomPad, borderTopColor: colors.border }]}>
-      {/* background blur on iOS */}
-      {isIOS && (
-        <BlurView
-          intensity={80}
-          tint={colorScheme === "dark" ? "dark" : "light"}
-          style={StyleSheet.absoluteFill}
-        />
-      )}
-      {!isIOS && (
-        <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.card }]} />
-      )}
-
-      {state.routes.map((route, index) => {
-        const descriptor = descriptors[route.key];
-        const isFocused = state.index === index;
-
-        // Skip hidden routes (categories)
-        if (descriptor.options.href === null) return null;
-
-        const onPress = () => {
-          const event = navigation.emit({
-            type: "tabPress",
-            target: route.key,
-            canPreventDefault: true,
-          });
-          if (!isFocused && !event.defaultPrevented) {
-            navigation.navigate(route.name, route.params);
-          }
-        };
-
-        // Center + button
-        if (route.name === "add") {
-          return (
-            <TouchableOpacity
-              key={route.key}
-              style={styles.addWrap}
-              onPress={() => router.push("/add")}
-              activeOpacity={0.85}
-            >
-              <LinearGradient
-                colors={["#818CF8", "#6366F1", "#4F46E5"]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.addBtn}
-              >
-                <Ionicons name="add" size={28} color="#FFFFFF" />
-              </LinearGradient>
-            </TouchableOpacity>
-          );
-        }
-
-        const tabInfo = TAB_ICONS[route.name];
-        if (!tabInfo) return null;
-        const iconName = isFocused ? tabInfo.filled : tabInfo.outline;
-        const tint = isFocused ? colors.primary : colors.mutedForeground;
-
-        return (
-          <TouchableOpacity
-            key={route.key}
-            style={styles.tabItem}
-            onPress={onPress}
-            activeOpacity={0.7}
-          >
-            {isIOS ? (
-              <SymbolView
-                name={
-                  route.name === "index"
-                    ? isFocused ? "books.vertical.fill" : "books.vertical"
-                    : route.name === "search"
-                    ? isFocused ? "magnifyingglass.circle.fill" : "magnifyingglass"
-                    : route.name === "insights"
-                    ? isFocused ? "chart.bar.xaxis.ascending.fill" : "chart.bar.xaxis"
-                    : isFocused ? "person.circle.fill" : "person.circle"
-                }
-                tintColor={tint}
-                size={24}
-              />
-            ) : (
-              <Ionicons name={iconName as any} size={22} color={tint} />
-            )}
-            <Text style={[styles.tabLabel, { color: tint }]}>{tabInfo.label}</Text>
-          </TouchableOpacity>
-        );
-      })}
-    </View>
-  );
-}
 
 function NativeTabLayout() {
   return (
@@ -149,18 +41,114 @@ function NativeTabLayout() {
 }
 
 function ClassicTabLayout() {
+  const colors = useColors();
+  const colorScheme = useColorScheme();
+  const insets = useSafeAreaInsets();
+  const router = useRouter();
+  const isIOS = Platform.OS === "ios";
+  const isWeb = Platform.OS === "web";
+
+  // Center the button in the tab bar
+  const tabBarHeight = isWeb ? 84 : 49 + (insets.bottom || 0);
+  const btnBottom = Math.round(tabBarHeight / 2) - 23; // 23 = half button height
+
   return (
-    <Tabs
-      tabBar={(props) => <CustomTabBar {...props} />}
-      screenOptions={{ headerShown: false }}
-    >
-      <Tabs.Screen name="index" />
-      <Tabs.Screen name="search" />
-      <Tabs.Screen name="add" />
-      <Tabs.Screen name="insights" />
-      <Tabs.Screen name="profile" />
-      <Tabs.Screen name="categories" options={{ href: null }} />
-    </Tabs>
+    <View style={styles.wrapper}>
+      <Tabs
+        screenOptions={{
+          tabBarActiveTintColor: colors.primary,
+          tabBarInactiveTintColor: colors.mutedForeground,
+          headerShown: false,
+          tabBarStyle: {
+            position: "absolute",
+            backgroundColor: isIOS ? "transparent" : colors.card,
+            borderTopWidth: 1,
+            borderTopColor: colors.border,
+            elevation: 0,
+            ...(isWeb ? { height: 84 } : {}),
+          },
+          tabBarBackground: () =>
+            isIOS ? (
+              <BlurView
+                intensity={80}
+                tint={colorScheme === "dark" ? "dark" : "light"}
+                style={StyleSheet.absoluteFill}
+              />
+            ) : isWeb ? (
+              <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.card }]} />
+            ) : null,
+        }}
+      >
+        <Tabs.Screen
+          name="index"
+          options={{
+            title: "Library",
+            tabBarIcon: ({ color }) =>
+              isIOS ? (
+                <SymbolView name="books.vertical" tintColor={color} size={24} />
+              ) : (
+                <Ionicons name="library-outline" size={22} color={color} />
+              ),
+          }}
+        />
+        <Tabs.Screen
+          name="search"
+          options={{
+            title: "Search",
+            tabBarIcon: ({ color }) =>
+              isIOS ? (
+                <SymbolView name="magnifyingglass" tintColor={color} size={24} />
+              ) : (
+                <Ionicons name="search-outline" size={22} color={color} />
+              ),
+          }}
+        />
+        <Tabs.Screen
+          name="insights"
+          options={{
+            title: "Insights",
+            tabBarIcon: ({ color }) =>
+              isIOS ? (
+                <SymbolView name="chart.bar.xaxis" tintColor={color} size={24} />
+              ) : (
+                <Ionicons name="bar-chart-outline" size={22} color={color} />
+              ),
+          }}
+        />
+        <Tabs.Screen
+          name="profile"
+          options={{
+            title: "Profile",
+            tabBarIcon: ({ color }) =>
+              isIOS ? (
+                <SymbolView name="person.circle" tintColor={color} size={24} />
+              ) : (
+                <Ionicons name="person-circle-outline" size={22} color={color} />
+              ),
+          }}
+        />
+        <Tabs.Screen
+          name="categories"
+          options={{ href: null }}
+        />
+      </Tabs>
+
+      {/* Center + button floating over the tab bar */}
+      <TouchableOpacity
+        style={[styles.addBtn, { bottom: btnBottom }]}
+        onPress={() => router.push("/add")}
+        activeOpacity={0.85}
+      >
+        <LinearGradient
+          colors={["#818CF8", "#6366F1", "#4F46E5"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.addGradient}
+        >
+          <Ionicons name="add" size={24} color="#FFFFFF" />
+        </LinearGradient>
+      </TouchableOpacity>
+    </View>
   );
 }
 
@@ -172,45 +160,25 @@ export default function TabLayout() {
 }
 
 const styles = StyleSheet.create({
-  tabBar: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderTopWidth: 1,
-    paddingTop: 8,
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    ...(Platform.OS === "web" ? { height: 84 } : {}),
-  },
-  tabItem: {
+  wrapper: {
     flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 3,
-    paddingVertical: 2,
-  },
-  tabLabel: {
-    fontSize: 10,
-    fontFamily: "Inter_500Medium",
-    letterSpacing: 0.2,
-  },
-  addWrap: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 2,
   },
   addBtn: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
+    position: "absolute",
+    left: "50%" as any,
+    marginLeft: -23,
+    zIndex: 10,
+    shadowColor: "#6366F1",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  addGradient: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#6366F1",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 10,
-    elevation: 8,
   },
 });
