@@ -68,7 +68,6 @@ function StatBubble({ value, label }: { value: string; label: string }) {
 }
 
 const THEME_OPTIONS: { key: ThemeMode; label: string; icon: string }[] = [
-  { key: "system", label: "System", icon: "phone-portrait-outline" },
   { key: "light", label: "Light", icon: "sunny-outline" },
   { key: "dark", label: "Dark", icon: "moon-outline" },
 ];
@@ -174,48 +173,41 @@ export default function ProfileScreen() {
         ))}
       </ScrollView>
 
-      <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>APPEARANCE</Text>
-      <View style={[styles.themeCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-        <View style={styles.themeRow}>
-          {THEME_OPTIONS.map((opt) => {
-            const isActive = themeMode === opt.key;
-            return (
-              <TouchableOpacity
-                key={opt.key}
-                style={[
-                  styles.themeBtn,
-                  {
-                    backgroundColor: isActive ? colors.primary : colors.secondary,
-                    borderColor: isActive ? colors.primary : colors.border,
-                  },
-                ]}
-                onPress={() => {
-                  setThemeMode(opt.key);
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                }}
-                activeOpacity={0.8}
-              >
-                <Ionicons
-                  name={opt.icon as any}
-                  size={18}
-                  color={isActive ? "#FFFFFF" : colors.mutedForeground}
-                />
-                <Text
-                  style={[
-                    styles.themeBtnText,
-                    { color: isActive ? "#FFFFFF" : colors.mutedForeground },
-                  ]}
-                >
-                  {opt.label}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-      </View>
-
       <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>MANAGE</Text>
       <View style={[styles.settingsGroup, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <View style={[styles.themeSettingRow, { borderBottomColor: colors.border }]}>
+          <View style={[styles.settingIconWrap, { backgroundColor: colors.primary + "22" }]}>
+            <Ionicons name="contrast-outline" size={18} color={colors.primary} />
+          </View>
+          <Text style={[styles.settingLabel, { color: colors.foreground }]}>Appearance</Text>
+          <View style={styles.themePills}>
+            {THEME_OPTIONS.map((opt) => {
+              const isActive = themeMode === opt.key || (themeMode === "system" && opt.key === "dark");
+              return (
+                <TouchableOpacity
+                  key={opt.key}
+                  style={[
+                    styles.themePill,
+                    {
+                      backgroundColor: isActive ? colors.primary : colors.secondary,
+                      borderColor: isActive ? colors.primary : colors.border,
+                    },
+                  ]}
+                  onPress={() => {
+                    setThemeMode(opt.key);
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  }}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name={opt.icon as any} size={14} color={isActive ? "#FFFFFF" : colors.mutedForeground} />
+                  <Text style={[styles.themePillText, { color: isActive ? "#FFFFFF" : colors.mutedForeground }]}>
+                    {opt.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </View>
         <SettingRow
           icon="grid-outline"
           label="Manage Categories"
@@ -361,23 +353,25 @@ const styles = StyleSheet.create({
   },
   earnedCount: { fontSize: 13, fontFamily: "Inter_600SemiBold" },
   badgeRow: { gap: 12, paddingVertical: 4 },
-  themeCard: {
-    borderRadius: 14,
-    borderWidth: 1,
-    padding: 12,
-  },
-  themeRow: { flexDirection: "row", gap: 8 },
-  themeBtn: {
-    flex: 1,
+  themeSettingRow: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-    paddingVertical: 10,
-    borderRadius: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 12,
+    borderBottomWidth: 1,
+  },
+  themePills: { flexDirection: "row", gap: 6 },
+  themePill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 20,
     borderWidth: 1,
   },
-  themeBtnText: { fontSize: 13, fontFamily: "Inter_600SemiBold" },
+  themePillText: { fontSize: 12, fontFamily: "Inter_600SemiBold" },
   settingsGroup: {
     borderRadius: 14,
     borderWidth: 1,
