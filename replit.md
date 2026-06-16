@@ -1,45 +1,57 @@
-# [Project name]
+# SkillFlow
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+A premium mobile app for saving videos and links, AI auto-categorizing content, and tracking learning progress. Tagline: "Save. Learn. Master."
 
 ## Run & Operate
 
-- `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
+- `pnpm --filter @workspace/mobile run dev` — run the Expo app (web preview)
 - `pnpm run typecheck` — full typecheck across all packages
-- `pnpm run build` — typecheck + build all packages
-- `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
-- `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required env: `DATABASE_URL` — Postgres connection string
 
 ## Stack
 
 - pnpm workspaces, Node.js 24, TypeScript 5.9
-- API: Express 5
-- DB: PostgreSQL + Drizzle ORM
-- Validation: Zod (`zod/v4`), `drizzle-zod`
-- API codegen: Orval (from OpenAPI spec)
-- Build: esbuild (CJS bundle)
+- Mobile: Expo SDK 54, expo-router v6
+- Storage: AsyncStorage (local, no backend)
+- Icons: @expo/vector-icons (Ionicons), expo-symbols
+- UI: expo-linear-gradient, expo-blur, expo-image, expo-haptics
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `artifacts/mobile/app/` — all screens (expo-router file-based routing)
+- `artifacts/mobile/app/(tabs)/` — tab screens: index, search, new (+ placeholder), insights, profile, categories
+- `artifacts/mobile/app/add.tsx` — Add Link modal (the real add screen)
+- `artifacts/mobile/context/LibraryContext.tsx` — all content/category state
+- `artifacts/mobile/context/ThemeContext.tsx` — dark/light mode
+- `artifacts/mobile/hooks/useColors.ts` — color hook (import from here, NOT ThemeContext)
+- `artifacts/mobile/components/ConfirmModal.tsx` — universal replacement for Alert.alert
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- AsyncStorage only — no database, no backend, all data local
+- `useColors()` must come from `@/hooks/useColors`, not `@/context/ThemeContext`
+- `Alert.alert` is blocked in Replit iframe — use `ConfirmModal` everywhere
+- Tab bar + button uses module-level `router` singleton (not `useRouter` hook) inside `tabBarButton` to avoid "Invalid hook call" crash
+- Center tab placeholder named `new` (not `add`) to avoid route collision with `app/add.tsx`
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+- Save any video/link from any platform
+- AI auto-categorizes content into skill sets
+- Track streaks, progress, and completion stats
+- Dark mode by default, light mode toggle
 
 ## User preferences
 
-_Populate as you build — explicit user instructions worth remembering across sessions._
+- Branding: indigo/purple gradients, dark default
+- App name: SkillFlow
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+- Never use `useRouter` or any hook inside `tabBarButton` — use `import { router } from "expo-router"` (module-level singleton)
+- Never create `(tabs)/add.tsx` — it collides with `app/add.tsx` (the modal). The center tab placeholder is `(tabs)/new.tsx`
+- `Alert.alert` is blocked in Replit iframe — always use `ConfirmModal`
 
 ## Pointers
 
 - See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details
+- See the `expo` skill for Expo-specific patterns
