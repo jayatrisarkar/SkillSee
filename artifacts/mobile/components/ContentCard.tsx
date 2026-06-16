@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
+import { Image } from "expo-image";
 import React from "react";
 import {
   Alert,
@@ -37,6 +38,18 @@ function extractDomain(url: string): string {
   }
 }
 
+function getPlatformIcon(url: string): string {
+  const lower = url.toLowerCase();
+  if (lower.includes("youtube.com") || lower.includes("youtu.be")) return "logo-youtube";
+  if (lower.includes("instagram.com")) return "logo-instagram";
+  if (lower.includes("tiktok.com")) return "musical-notes-outline";
+  if (lower.includes("twitter.com") || lower.includes("x.com")) return "logo-twitter";
+  if (lower.includes("linkedin.com")) return "logo-linkedin";
+  if (lower.includes("github.com")) return "logo-github";
+  if (lower.includes("reddit.com")) return "logo-reddit";
+  return "link-outline";
+}
+
 export function ContentCard({
   item,
   categoryColor,
@@ -47,6 +60,7 @@ export function ContentCard({
 }: ContentCardProps) {
   const colors = useColors();
   const statusConfig = STATUS_CONFIG[item.status];
+  const hasThumbnail = !!item.thumbnailUrl;
 
   const handleLongPress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -65,13 +79,36 @@ export function ContentCard({
       onLongPress={handleLongPress}
       activeOpacity={0.8}
     >
-      {categoryColor && <View style={[styles.accent, { backgroundColor: categoryColor }]} />}
+      {hasThumbnail ? (
+        <View style={styles.thumbnailWrap}>
+          <Image
+            source={{ uri: item.thumbnailUrl }}
+            style={styles.thumbnail}
+            contentFit="cover"
+            transition={300}
+          />
+          {categoryColor && <View style={[styles.thumbnailAccent, { backgroundColor: categoryColor }]} />}
+        </View>
+      ) : (
+        categoryColor && <View style={[styles.accent, { backgroundColor: categoryColor }]} />
+      )}
+
       <View style={styles.content}>
         <View style={styles.header}>
-          <Text style={[styles.title, { color: colors.foreground }]} numberOfLines={2}>
-            {item.title}
-          </Text>
-          <TouchableOpacity onPress={() => Linking.openURL(item.url)} hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}>
+          <View style={styles.titleRow}>
+            <Ionicons
+              name={getPlatformIcon(item.url) as any}
+              size={14}
+              color={colors.mutedForeground}
+            />
+            <Text style={[styles.title, { color: colors.foreground }]} numberOfLines={2}>
+              {item.title}
+            </Text>
+          </View>
+          <TouchableOpacity
+            onPress={() => Linking.openURL(item.url)}
+            hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}
+          >
             <Ionicons name="open-outline" size={16} color={colors.mutedForeground} />
           </TouchableOpacity>
         </View>
@@ -80,17 +117,17 @@ export function ContentCard({
           {extractDomain(item.url)}
         </Text>
 
-        {item.notes ? (
-          <Text style={[styles.notes, { color: colors.mutedForeground }]} numberOfLines={2}>
-            {item.notes}
+        {(item.description || item.notes) ? (
+          <Text style={[styles.description, { color: colors.mutedForeground }]} numberOfLines={2}>
+            {item.description || item.notes}
           </Text>
         ) : null}
 
         <View style={styles.footer}>
           <View style={styles.tags}>
             {showCategory && categoryName ? (
-              <View style={[styles.tag, { backgroundColor: colors.secondary }]}>
-                <Text style={[styles.tagText, { color: colors.mutedForeground }]}>{categoryName}</Text>
+              <View style={[styles.tag, { backgroundColor: (categoryColor ?? colors.primary) + "22" }]}>
+                <Text style={[styles.tagText, { color: categoryColor ?? colors.primary }]}>{categoryName}</Text>
               </View>
             ) : null}
             {item.tags.slice(0, 2).map((tag) => (
@@ -119,15 +156,28 @@ const styles = StyleSheet.create({
   card: {
     borderRadius: 14,
     borderWidth: 1,
-    flexDirection: "row",
     overflow: "hidden",
     marginBottom: 10,
   },
-  accent: {
+  thumbnailWrap: {
+    position: "relative",
+  },
+  thumbnail: {
+    width: "100%",
+    height: 160,
+  },
+  thumbnailAccent: {
+    position: "absolute",
+    left: 0,
+    top: 0,
+    bottom: 0,
     width: 4,
   },
+  accent: {
+    height: 4,
+    width: "100%",
+  },
   content: {
-    flex: 1,
     padding: 14,
     gap: 6,
   },
@@ -135,6 +185,12 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-start",
     gap: 8,
+  },
+  titleRow: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 6,
   },
   title: {
     flex: 1,
@@ -146,7 +202,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: "Inter_400Regular",
   },
-  notes: {
+  description: {
     fontSize: 13,
     fontFamily: "Inter_400Regular",
     lineHeight: 18,

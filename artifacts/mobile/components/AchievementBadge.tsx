@@ -17,7 +17,7 @@ export function AchievementBadge({ achievement, size = "md" }: AchievementBadgeP
   const iconSize = isSm ? 20 : 26;
 
   return (
-    <View style={[styles.container, { opacity: achievement.earned ? 1 : 0.35 }]}>
+    <View style={[styles.container, { opacity: achievement.earned ? 1 : 0.4 }]}>
       <View
         style={[
           styles.iconWrap,
@@ -28,7 +28,8 @@ export function AchievementBadge({ achievement, size = "md" }: AchievementBadgeP
             backgroundColor: achievement.earned
               ? achievement.color + "22"
               : colors.secondary,
-            borderColor: achievement.earned ? achievement.color + "55" : colors.border,
+            borderColor: achievement.earned ? achievement.color + "66" : colors.border,
+            borderWidth: achievement.earned ? 1.5 : 1,
           },
         ]}
       >
@@ -38,17 +39,28 @@ export function AchievementBadge({ achievement, size = "md" }: AchievementBadgeP
           color={achievement.earned ? achievement.color : colors.mutedForeground}
         />
         {achievement.earned && (
-          <View style={[styles.checkDot, { backgroundColor: achievement.color }]}>
+          <View style={[styles.checkDot, { backgroundColor: achievement.color, borderColor: colors.background }]}>
             <Ionicons name="checkmark" size={8} color="#FFFFFF" />
           </View>
         )}
       </View>
       <Text
-        style={[styles.title, { color: achievement.earned ? colors.foreground : colors.mutedForeground, fontSize: isSm ? 10 : 11 }]}
+        style={[
+          styles.title,
+          {
+            color: achievement.earned ? colors.foreground : colors.mutedForeground,
+            fontSize: isSm ? 10 : 11,
+          },
+        ]}
         numberOfLines={2}
       >
         {achievement.title}
       </Text>
+      {!achievement.earned && achievement.progressText && (
+        <Text style={[styles.progress, { color: colors.mutedForeground }]}>
+          {achievement.progressText}
+        </Text>
+      )}
     </View>
   );
 }
@@ -56,30 +68,33 @@ export function AchievementBadge({ achievement, size = "md" }: AchievementBadgeP
 const styles = StyleSheet.create({
   container: {
     alignItems: "center",
-    gap: 6,
-    width: 80,
+    gap: 5,
+    width: 82,
   },
   iconWrap: {
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 1,
     position: "relative",
   },
   checkDot: {
     position: "absolute",
-    top: -4,
-    right: -4,
-    width: 16,
-    height: 16,
-    borderRadius: 8,
+    top: -5,
+    right: -5,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 1.5,
-    borderColor: "#0D1117",
+    borderWidth: 2,
   },
   title: {
     fontFamily: "Inter_500Medium",
     textAlign: "center",
     lineHeight: 14,
+  },
+  progress: {
+    fontSize: 10,
+    fontFamily: "Inter_400Regular",
+    textAlign: "center",
   },
 });

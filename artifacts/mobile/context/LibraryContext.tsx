@@ -28,6 +28,8 @@ export interface ContentItem {
   isArchived: boolean;
   createdAt: number;
   updatedAt: number;
+  thumbnailUrl?: string;
+  description?: string;
 }
 
 interface LibraryContextType {

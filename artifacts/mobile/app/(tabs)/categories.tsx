@@ -113,38 +113,39 @@ export default function CategoriesScreen() {
         renderItem={({ item: cat }) => {
           const count = items.filter((it) => it.categoryId === cat.id).length;
           return (
-            <TouchableOpacity
-              style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border }]}
-              onPress={() => router.push(`/category/${cat.id}`)}
-              activeOpacity={0.8}
-            >
-              <View style={[styles.iconWrap, { backgroundColor: cat.color + "22" }]}>
-                <Ionicons name={cat.icon as any} size={22} color={cat.color} />
-              </View>
-              <View style={styles.rowInfo}>
-                <Text style={[styles.catName, { color: colors.foreground }]}>{cat.name}</Text>
-                <Text style={[styles.catCount, { color: colors.mutedForeground }]}>
-                  {count} {count === 1 ? "item" : "items"}
-                </Text>
-              </View>
+            <View style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <TouchableOpacity
+                style={styles.rowLeft}
+                onPress={() => router.push(`/category/${cat.id}`)}
+                activeOpacity={0.75}
+              >
+                <View style={[styles.iconWrap, { backgroundColor: cat.color + "22" }]}>
+                  <Ionicons name={cat.icon as any} size={22} color={cat.color} />
+                </View>
+                <View style={styles.rowInfo}>
+                  <Text style={[styles.catName, { color: colors.foreground }]}>{cat.name}</Text>
+                  <Text style={[styles.catCount, { color: colors.mutedForeground }]}>
+                    {count} {count === 1 ? "item" : "items"}
+                  </Text>
+                </View>
+              </TouchableOpacity>
               <View style={styles.rowActions}>
                 <TouchableOpacity
                   onPress={() => router.push(`/category/${cat.id}?edit=1`)}
-                  hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}
+                  hitSlop={{ top: 12, right: 12, bottom: 12, left: 12 }}
                   style={styles.actionBtn}
                 >
                   <Ionicons name="pencil-outline" size={18} color={colors.mutedForeground} />
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={() => handleDelete(cat)}
-                  hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}
+                  hitSlop={{ top: 12, right: 12, bottom: 12, left: 12 }}
                   style={styles.actionBtn}
                 >
                   <Ionicons name="trash-outline" size={18} color={colors.destructive} />
                 </TouchableOpacity>
-                <Ionicons name="chevron-forward" size={18} color={colors.mutedForeground} />
               </View>
-            </TouchableOpacity>
+            </View>
           );
         }}
         ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
@@ -177,10 +178,16 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: "row",
     alignItems: "center",
-    padding: 14,
     borderRadius: 14,
     borderWidth: 1,
+    overflow: "hidden",
+  },
+  rowLeft: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
     gap: 12,
+    padding: 14,
   },
   iconWrap: {
     width: 44,
@@ -201,7 +208,8 @@ const styles = StyleSheet.create({
   rowActions: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: 12,
+    paddingRight: 14,
   },
   actionBtn: {
     padding: 4,

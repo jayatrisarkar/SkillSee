@@ -27,6 +27,7 @@ export interface Achievement {
   icon: string;
   color: string;
   earned: boolean;
+  progressText?: string;
 }
 
 function startOfDay(ts: number): number {
@@ -218,6 +219,8 @@ export function computeAchievements(items: ContentItem[], categories: Category[]
     countByCat.set(it.categoryId, (countByCat.get(it.categoryId) ?? 0) + 1);
   }
 
+  const notesCount = active.filter((it) => it.notes.trim().length > 0).length;
+
   return [
     {
       id: "first_save",
@@ -226,6 +229,7 @@ export function computeAchievements(items: ContentItem[], categories: Category[]
       icon: "bookmark",
       color: "#F59E0B",
       earned: active.length >= 1,
+      progressText: active.length >= 1 ? undefined : "Save 1 item",
     },
     {
       id: "saves_10",
@@ -234,6 +238,7 @@ export function computeAchievements(items: ContentItem[], categories: Category[]
       icon: "library",
       color: "#6366F1",
       earned: active.length >= 10,
+      progressText: active.length >= 10 ? undefined : `${active.length}/10 saved`,
     },
     {
       id: "saves_50",
@@ -242,6 +247,7 @@ export function computeAchievements(items: ContentItem[], categories: Category[]
       icon: "archive",
       color: "#8B5CF6",
       earned: active.length >= 50,
+      progressText: active.length >= 50 ? undefined : `${active.length}/50 saved`,
     },
     {
       id: "first_complete",
@@ -250,6 +256,7 @@ export function computeAchievements(items: ContentItem[], categories: Category[]
       icon: "checkmark-circle",
       color: "#10B981",
       earned: completed.length >= 1,
+      progressText: completed.length >= 1 ? undefined : "Complete 1 item",
     },
     {
       id: "complete_10",
@@ -258,6 +265,7 @@ export function computeAchievements(items: ContentItem[], categories: Category[]
       icon: "trophy",
       color: "#10B981",
       earned: completed.length >= 10,
+      progressText: completed.length >= 10 ? undefined : `${completed.length}/10 done`,
     },
     {
       id: "complete_50",
@@ -266,6 +274,7 @@ export function computeAchievements(items: ContentItem[], categories: Category[]
       icon: "medal",
       color: "#F59E0B",
       earned: completed.length >= 50,
+      progressText: completed.length >= 50 ? undefined : `${completed.length}/50 done`,
     },
     {
       id: "streak_3",
@@ -274,6 +283,7 @@ export function computeAchievements(items: ContentItem[], categories: Category[]
       icon: "flame",
       color: "#EF4444",
       earned: streak >= 3,
+      progressText: streak >= 3 ? undefined : `${streak}/3 days`,
     },
     {
       id: "streak_7",
@@ -282,6 +292,7 @@ export function computeAchievements(items: ContentItem[], categories: Category[]
       icon: "flame",
       color: "#EF4444",
       earned: streak >= 7,
+      progressText: streak >= 7 ? undefined : `${streak}/7 days`,
     },
     {
       id: "streak_30",
@@ -290,6 +301,7 @@ export function computeAchievements(items: ContentItem[], categories: Category[]
       icon: "rocket",
       color: "#EC4899",
       earned: streak >= 30,
+      progressText: streak >= 30 ? undefined : `${streak}/30 days`,
     },
     {
       id: "custom_category",
@@ -298,6 +310,7 @@ export function computeAchievements(items: ContentItem[], categories: Category[]
       icon: "folder",
       color: "#F97316",
       earned: customCats.length >= 1,
+      progressText: customCats.length >= 1 ? undefined : "Create 1 category",
     },
     {
       id: "multi_category",
@@ -306,6 +319,7 @@ export function computeAchievements(items: ContentItem[], categories: Category[]
       icon: "grid",
       color: "#22D3EE",
       earned: countByCat.size >= 5,
+      progressText: countByCat.size >= 5 ? undefined : `${countByCat.size}/5 cats`,
     },
     {
       id: "tag_master",
@@ -314,6 +328,7 @@ export function computeAchievements(items: ContentItem[], categories: Category[]
       icon: "pricetag",
       color: "#A855F7",
       earned: allTags.size >= 10,
+      progressText: allTags.size >= 10 ? undefined : `${allTags.size}/10 tags`,
     },
     {
       id: "note_taker",
@@ -321,7 +336,8 @@ export function computeAchievements(items: ContentItem[], categories: Category[]
       description: "Add notes to 5 items",
       icon: "document-text",
       color: "#3B82F6",
-      earned: active.filter((it) => it.notes.trim().length > 0).length >= 5,
+      earned: notesCount >= 5,
+      progressText: notesCount >= 5 ? undefined : `${notesCount}/5 notes`,
     },
     {
       id: "finance_expert",
@@ -330,6 +346,7 @@ export function computeAchievements(items: ContentItem[], categories: Category[]
       icon: "trending-up",
       color: "#10B981",
       earned: (countByCat.get("cat_finance") ?? 0) >= 10,
+      progressText: (countByCat.get("cat_finance") ?? 0) >= 10 ? undefined : `${countByCat.get("cat_finance") ?? 0}/10`,
     },
     {
       id: "coding_explorer",
@@ -338,6 +355,7 @@ export function computeAchievements(items: ContentItem[], categories: Category[]
       icon: "code-slash",
       color: "#22D3EE",
       earned: (countByCat.get("cat_coding") ?? 0) >= 10,
+      progressText: (countByCat.get("cat_coding") ?? 0) >= 10 ? undefined : `${countByCat.get("cat_coding") ?? 0}/10`,
     },
     {
       id: "fitness_learner",
@@ -346,6 +364,7 @@ export function computeAchievements(items: ContentItem[], categories: Category[]
       icon: "barbell",
       color: "#EF4444",
       earned: (countByCat.get("cat_fitness") ?? 0) >= 10,
+      progressText: (countByCat.get("cat_fitness") ?? 0) >= 10 ? undefined : `${countByCat.get("cat_fitness") ?? 0}/10`,
     },
   ];
 }

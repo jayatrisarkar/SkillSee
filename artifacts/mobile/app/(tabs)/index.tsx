@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
+import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import React, { useMemo } from "react";
 import {
@@ -38,7 +39,7 @@ export default function LibraryScreen() {
   const topInset = Platform.OS === "web" ? 67 : insets.top;
 
   const recentItems = useMemo(
-    () => items.filter((it) => !it.isArchived).slice(0, 8),
+    () => items.filter((it) => !it.isArchived).slice(0, 5),
     [items]
   );
 
@@ -76,12 +77,21 @@ export default function LibraryScreen() {
           },
         ]}
       >
+        {/* ── Header ── */}
         <View style={styles.headerRow}>
           <View style={styles.greetingBlock}>
             <Text style={[styles.greeting, { color: colors.mutedForeground }]}>
               {getGreeting()}, {firstName} 👋
             </Text>
             <View style={styles.titleRow}>
+              <LinearGradient
+                colors={["#6366F1", "#8B5CF6"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.logoIcon}
+              >
+                <Text style={styles.logoEmoji}>⚡</Text>
+              </LinearGradient>
               <Text style={[styles.titleBrand, { color: colors.primary }]}>Skill</Text>
               <Text style={[styles.titleBrand, { color: colors.foreground }]}>Flow</Text>
             </View>
@@ -98,6 +108,7 @@ export default function LibraryScreen() {
           </TouchableOpacity>
         </View>
 
+        {/* ── Quick Stats ── */}
         <View style={styles.quickStats}>
           <View style={[styles.quickStatPill, { backgroundColor: "#EF444415", borderColor: "#EF444430" }]}>
             <Ionicons name="flame" size={14} color="#EF4444" />
@@ -119,6 +130,7 @@ export default function LibraryScreen() {
           </View>
         </View>
 
+        {/* ── AI Insight ── */}
         {topInsight && (
           <TouchableOpacity
             style={[styles.insightBanner, { backgroundColor: colors.card, borderColor: colors.primary + "44" }]}
@@ -135,59 +147,7 @@ export default function LibraryScreen() {
           </TouchableOpacity>
         )}
 
-        {inProgressItems.length > 0 && (
-          <View>
-            <View style={styles.rowHeader}>
-              <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>CONTINUE LEARNING</Text>
-              <TouchableOpacity onPress={() => router.push("/(tabs)/search")}>
-                <Text style={[styles.seeAll, { color: colors.primary }]}>See all</Text>
-              </TouchableOpacity>
-            </View>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.inProgressRow}>
-              {inProgressItems.map((item) => {
-                const cat = categories.find((c) => c.id === item.categoryId);
-                return (
-                  <TouchableOpacity
-                    key={item.id}
-                    style={[styles.inProgressCard, { backgroundColor: colors.card, borderColor: (cat?.color ?? colors.primary) + "55", borderLeftColor: cat?.color ?? colors.primary }]}
-                    onPress={() => router.push(`/content/${item.id}`)}
-                    activeOpacity={0.8}
-                  >
-                    <View style={styles.inProgressContent}>
-                      <Text style={[styles.inProgressTitle, { color: colors.foreground }]} numberOfLines={2}>
-                        {item.title}
-                      </Text>
-                      <Text style={[styles.inProgressCat, { color: cat?.color ?? colors.primary }]}>
-                        {cat?.name ?? ""}
-                      </Text>
-                    </View>
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
-          </View>
-        )}
-
-        <View style={styles.rowHeader}>
-          <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>CATEGORIES</Text>
-          <TouchableOpacity onPress={() => router.push("/(tabs)/categories")}>
-            <Text style={[styles.seeAll, { color: colors.primary }]}>Manage</Text>
-          </TouchableOpacity>
-        </View>
-        <View style={styles.catGrid}>
-          {categoryData.map((cat) => (
-            <View key={cat.id} style={styles.catCardWrap}>
-              <CategoryCard
-                name={cat.name}
-                icon={cat.icon}
-                color={cat.color}
-                count={cat.count}
-                onPress={() => router.push(`/category/${cat.id}`)}
-              />
-            </View>
-          ))}
-        </View>
-
+        {/* ── Recently Saved ── */}
         {recentItems.length > 0 && (
           <View>
             <View style={styles.rowHeader}>
@@ -216,6 +176,61 @@ export default function LibraryScreen() {
           </View>
         )}
 
+        {/* ── Continue Learning ── */}
+        {inProgressItems.length > 0 && (
+          <View>
+            <View style={styles.rowHeader}>
+              <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>CONTINUE LEARNING</Text>
+            </View>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.inProgressRow}>
+              {inProgressItems.map((item) => {
+                const cat = categories.find((c) => c.id === item.categoryId);
+                return (
+                  <TouchableOpacity
+                    key={item.id}
+                    style={[styles.inProgressCard, {
+                      backgroundColor: colors.card,
+                      borderColor: (cat?.color ?? colors.primary) + "55",
+                      borderLeftColor: cat?.color ?? colors.primary,
+                    }]}
+                    onPress={() => router.push(`/content/${item.id}`)}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={[styles.inProgressTitle, { color: colors.foreground }]} numberOfLines={2}>
+                      {item.title}
+                    </Text>
+                    <Text style={[styles.inProgressCat, { color: cat?.color ?? colors.primary }]}>
+                      {cat?.name ?? ""}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+        )}
+
+        {/* ── Categories ── */}
+        <View style={styles.rowHeader}>
+          <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>CATEGORIES</Text>
+          <TouchableOpacity onPress={() => router.push("/(tabs)/categories")}>
+            <Text style={[styles.seeAll, { color: colors.primary }]}>Manage</Text>
+          </TouchableOpacity>
+        </View>
+        <View style={styles.catGrid}>
+          {categoryData.map((cat) => (
+            <View key={cat.id} style={styles.catCardWrap}>
+              <CategoryCard
+                name={cat.name}
+                icon={cat.icon}
+                color={cat.color}
+                count={cat.count}
+                onPress={() => router.push(`/category/${cat.id}`)}
+              />
+            </View>
+          ))}
+        </View>
+
+        {/* ── Empty State ── */}
         {items.length === 0 && (
           <EmptyState
             icon="archive-outline"
@@ -257,8 +272,16 @@ const styles = StyleSheet.create({
   },
   greetingBlock: { gap: 2 },
   greeting: { fontSize: 13, fontFamily: "Inter_500Medium", letterSpacing: 0.2 },
-  titleRow: { flexDirection: "row", alignItems: "baseline" },
-  titleBrand: { fontSize: 30, fontFamily: "Inter_700Bold", letterSpacing: -0.8 },
+  titleRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+  logoIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  logoEmoji: { fontSize: 18 },
+  titleBrand: { fontSize: 28, fontFamily: "Inter_700Bold", letterSpacing: -0.8 },
   avatarSmall: {
     width: 42,
     height: 42,
@@ -306,12 +329,12 @@ const styles = StyleSheet.create({
   inProgressRow: { gap: 12, paddingVertical: 4 },
   inProgressCard: {
     width: 180,
+    padding: 14,
     borderRadius: 14,
     borderWidth: 1,
     borderLeftWidth: 4,
-    overflow: "hidden",
+    gap: 6,
   },
-  inProgressContent: { padding: 12, gap: 6 },
   inProgressTitle: { fontSize: 13, fontFamily: "Inter_600SemiBold", lineHeight: 18 },
   inProgressCat: { fontSize: 11, fontFamily: "Inter_600SemiBold" },
   catGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },

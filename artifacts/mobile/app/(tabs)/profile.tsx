@@ -2,13 +2,14 @@ import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Alert,
   Image,
   Platform,
   ScrollView,
   StyleSheet,
+  Switch,
   Text,
   TouchableOpacity,
   View,
@@ -21,6 +22,11 @@ import { useProfile } from "@/context/ProfileContext";
 import { type ThemeMode, useTheme } from "@/context/ThemeContext";
 import { useColors } from "@/hooks/useColors";
 import { computeAchievements, computeStats } from "@/utils/insights";
+import {
+  disableNotifications,
+  getNotificationsEnabled,
+  requestAndEnableNotifications,
+} from "@/utils/notifications";
 
 interface SettingRowProps {
   icon: string;
@@ -29,15 +35,16 @@ interface SettingRowProps {
   onPress?: () => void;
   value?: string;
   destructive?: boolean;
+  right?: React.ReactNode;
 }
 
-function SettingRow({ icon, label, color, onPress, value, destructive }: SettingRowProps) {
+function SettingRow({ icon, label, color, onPress, value, destructive, right }: SettingRowProps) {
   const colors = useColors();
   return (
     <TouchableOpacity
       style={[styles.settingRow, { borderBottomColor: colors.border }]}
       onPress={onPress}
-      activeOpacity={0.7}
+      activeOpacity={onPress ? 0.7 : 1}
     >
       <View style={[styles.settingIconWrap, { backgroundColor: (color ?? colors.mutedForeground) + "22" }]}>
         <Ionicons name={icon as any} size={18} color={color ?? colors.mutedForeground} />
@@ -48,11 +55,15 @@ function SettingRow({ icon, label, color, onPress, value, destructive }: Setting
       {value ? (
         <Text style={[styles.settingValue, { color: colors.mutedForeground }]}>{value}</Text>
       ) : null}
-      <Ionicons
-        name="chevron-forward"
-        size={16}
-        color={destructive ? colors.destructive : colors.mutedForeground}
-      />
+      {right ?? (
+        onPress && !right ? (
+          <Ionicons
+            name="chevron-forward"
+            size={16}
+            color={destructive ? colors.destructive : colors.mutedForeground}
+          />
+        ) : null
+      )}
     </TouchableOpacity>
   );
 }
@@ -81,6 +92,31 @@ export default function ProfileScreen() {
   const { themeMode, setThemeMode } = useTheme();
 
   const topInset = Platform.OS === "web" ? 67 : insets.top;
+
+  const [notifEnabled, setNotifEnabled] = useState(false);
+
+  useEffect(() => {
+    getNotificationsEnabled().then(setNotifEnabled);
+  }, []);
+
+  async function handleToggleNotif(val: boolean) {
+    if (val) {
+      const granted = await requestAndEnableNotifications();
+      if (!granted) {
+        Alert.alert(
+          "Permission Needed",
+          "Please allow notifications in your device settings to enable daily reminders."
+        );
+        return;
+      }
+      setNotifEnabled(true);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } else {
+      await disableNotifications();
+      setNotifEnabled(false);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+  }
 
   const stats = useMemo(() => computeStats(items, categories), [items, categories]);
   const achievements = useMemo(() => computeAchievements(items, categories), [items, categories]);
@@ -126,6 +162,7 @@ export default function ProfileScreen() {
     >
       <Text style={[styles.screenTitle, { color: colors.foreground }]}>Profile</Text>
 
+      {/* ── Profile Card ── */}
       <View style={[styles.profileCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
         <TouchableOpacity style={styles.avatarWrap} onPress={pickAvatar} activeOpacity={0.8}>
           {profile.avatarUri ? (
@@ -153,6 +190,7 @@ export default function ProfileScreen() {
         </TouchableOpacity>
       </View>
 
+      {/* ── Stats ── */}
       <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>STATISTICS</Text>
       <View style={styles.statsGrid}>
         <StatBubble value={String(stats.totalSaved)} label="Total Saves" />
@@ -163,6 +201,7 @@ export default function ProfileScreen() {
         <StatBubble value={`${stats.estimatedHours}h`} label="Est. Hours" />
       </View>
 
+      {/* ── Achievements ── */}
       <View style={styles.achievementHeader}>
         <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>ACHIEVEMENTS</Text>
         <Text style={[styles.earnedCount, { color: colors.primary }]}>{earnedCount}/{achievements.length}</Text>
@@ -173,8 +212,10 @@ export default function ProfileScreen() {
         ))}
       </ScrollView>
 
+      {/* ── Manage ── */}
       <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>MANAGE</Text>
       <View style={[styles.settingsGroup, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        {/* Appearance toggle */}
         <View style={[styles.themeSettingRow, { borderBottomColor: colors.border }]}>
           <View style={[styles.settingIconWrap, { backgroundColor: colors.primary + "22" }]}>
             <Ionicons name="contrast-outline" size={18} color={colors.primary} />
@@ -182,7 +223,8 @@ export default function ProfileScreen() {
           <Text style={[styles.settingLabel, { color: colors.foreground }]}>Appearance</Text>
           <View style={styles.themePills}>
             {THEME_OPTIONS.map((opt) => {
-              const isActive = themeMode === opt.key || (themeMode === "system" && opt.key === "dark");
+              const isActive =
+                themeMode === opt.key || (themeMode === "system" && opt.key === "dark");
               return (
                 <TouchableOpacity
                   key={opt.key}
@@ -199,8 +241,17 @@ export default function ProfileScreen() {
                   }}
                   activeOpacity={0.8}
                 >
-                  <Ionicons name={opt.icon as any} size={14} color={isActive ? "#FFFFFF" : colors.mutedForeground} />
-                  <Text style={[styles.themePillText, { color: isActive ? "#FFFFFF" : colors.mutedForeground }]}>
+                  <Ionicons
+                    name={opt.icon as any}
+                    size={14}
+                    color={isActive ? "#FFFFFF" : colors.mutedForeground}
+                  />
+                  <Text
+                    style={[
+                      styles.themePillText,
+                      { color: isActive ? "#FFFFFF" : colors.mutedForeground },
+                    ]}
+                  >
                     {opt.label}
                   </Text>
                 </TouchableOpacity>
@@ -208,6 +259,7 @@ export default function ProfileScreen() {
             })}
           </View>
         </View>
+
         <SettingRow
           icon="grid-outline"
           label="Manage Categories"
@@ -229,26 +281,40 @@ export default function ProfileScreen() {
               { text: "Cancel", style: "cancel" },
               {
                 text: "Export",
-                onPress: () => Alert.alert("Coming Soon", "Export feature coming in the next update."),
+                onPress: () =>
+                  Alert.alert("Coming Soon", "Export feature coming in the next update."),
               },
             ])
           }
         />
       </View>
 
+      {/* ── Settings ── */}
       <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>SETTINGS</Text>
       <View style={[styles.settingsGroup, { backgroundColor: colors.card, borderColor: colors.border }]}>
-        <SettingRow
-          icon="notifications-outline"
-          label="Notification Settings"
-          color="#8B5CF6"
-          onPress={() => Alert.alert("Coming Soon", "Push notification settings coming soon.")}
-        />
+        <View style={[styles.settingRow, { borderBottomColor: colors.border }]}>
+          <View style={[styles.settingIconWrap, { backgroundColor: "#8B5CF622" }]}>
+            <Ionicons name="notifications-outline" size={18} color="#8B5CF6" />
+          </View>
+          <Text style={[styles.settingLabel, { color: colors.foreground }]}>Daily Reminders</Text>
+          <Switch
+            value={notifEnabled}
+            onValueChange={handleToggleNotif}
+            trackColor={{ false: colors.secondary, true: colors.primary + "99" }}
+            thumbColor={notifEnabled ? colors.primary : colors.mutedForeground}
+            ios_backgroundColor={colors.secondary}
+          />
+        </View>
         <SettingRow
           icon="lock-closed-outline"
           label="Privacy Settings"
           color="#64748B"
-          onPress={() => Alert.alert("Privacy", "All your data is stored locally on your device. Nothing is shared externally.")}
+          onPress={() =>
+            Alert.alert(
+              "Privacy",
+              "All your data is stored locally on your device. Nothing is shared externally."
+            )
+          }
         />
         <SettingRow
           icon="settings-outline"
@@ -264,10 +330,14 @@ export default function ProfileScreen() {
           label="Log Out"
           destructive
           onPress={() =>
-            Alert.alert("Log Out", "Your data is stored locally and won't be deleted.", [
-              { text: "Cancel", style: "cancel" },
-              { text: "Log Out", style: "destructive", onPress: () => {} },
-            ])
+            Alert.alert(
+              "Log Out",
+              "Your data is stored locally and won't be deleted.",
+              [
+                { text: "Cancel", style: "cancel" },
+                { text: "Log Out", style: "destructive", onPress: () => {} },
+              ]
+            )
           }
         />
       </View>
@@ -353,25 +423,6 @@ const styles = StyleSheet.create({
   },
   earnedCount: { fontSize: 13, fontFamily: "Inter_600SemiBold" },
   badgeRow: { gap: 12, paddingVertical: 4 },
-  themeSettingRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    gap: 12,
-    borderBottomWidth: 1,
-  },
-  themePills: { flexDirection: "row", gap: 6 },
-  themePill: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 20,
-    borderWidth: 1,
-  },
-  themePillText: { fontSize: 12, fontFamily: "Inter_600SemiBold" },
   settingsGroup: {
     borderRadius: 14,
     borderWidth: 1,
@@ -394,5 +445,24 @@ const styles = StyleSheet.create({
   },
   settingLabel: { flex: 1, fontSize: 15, fontFamily: "Inter_400Regular" },
   settingValue: { fontSize: 13, fontFamily: "Inter_400Regular" },
+  themeSettingRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 12,
+    borderBottomWidth: 1,
+  },
+  themePills: { flexDirection: "row", gap: 6 },
+  themePill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderWidth: 1,
+  },
+  themePillText: { fontSize: 12, fontFamily: "Inter_600SemiBold" },
   version: { fontSize: 12, fontFamily: "Inter_400Regular", textAlign: "center", marginTop: 8, marginBottom: 4 },
 });

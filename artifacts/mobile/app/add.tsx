@@ -28,6 +28,8 @@ export default function AddScreen() {
   const [url, setUrl] = useState("");
   const [title, setTitle] = useState("");
   const [notes, setNotes] = useState("");
+  const [description, setDescription] = useState("");
+  const [thumbnailUrl, setThumbnailUrl] = useState<string | null>(null);
   const [tagInput, setTagInput] = useState("");
   const [tags, setTags] = useState<string[]>([]);
   const [status, setStatus] = useState<"none" | "learning" | "completed">("none");
@@ -39,6 +41,26 @@ export default function AddScreen() {
   const tagRef = useRef<TextInput>(null);
 
   const selectedCategory = categories.find((c) => c.id === categoryId);
+
+  function extractYouTubeThumbnail(rawUrl: string): string | null {
+    const patterns = [
+      /youtube\.com\/watch\?v=([^&\s]+)/,
+      /youtu\.be\/([^?\s]+)/,
+      /youtube\.com\/shorts\/([^?\s\/]+)/,
+      /youtube\.com\/embed\/([^?\s]+)/,
+    ];
+    for (const pat of patterns) {
+      const match = rawUrl.match(pat);
+      if (match) return `https://img.youtube.com/vi/${match[1]}/hqdefault.jpg`;
+    }
+    return null;
+  }
+
+  function handleUrlChange(text: string) {
+    setUrl(text);
+    const thumb = extractYouTubeThumbnail(text);
+    setThumbnailUrl(thumb);
+  }
 
   function handleAutoClassify() {
     if (!url && !title) return;
@@ -82,6 +104,8 @@ export default function AddScreen() {
       title: title.trim(),
       url: finalUrl,
       notes: notes.trim(),
+      description: description.trim() || undefined,
+      thumbnailUrl: thumbnailUrl ?? undefined,
       categoryId,
       tags,
       status,
@@ -116,7 +140,7 @@ export default function AddScreen() {
             <Ionicons name="link-outline" size={18} color={colors.mutedForeground} />
             <TextInput
               value={url}
-              onChangeText={setUrl}
+              onChangeText={handleUrlChange}
               onBlur={handleAutoClassify}
               placeholder="https://..."
               placeholderTextColor={colors.mutedForeground}
@@ -136,6 +160,19 @@ export default function AddScreen() {
             placeholder="What is this about?"
             placeholderTextColor={colors.mutedForeground}
             style={[styles.fieldInput, { backgroundColor: colors.secondary, borderColor: colors.border, color: colors.foreground }]}
+          />
+        </Field>
+
+        <Field label="DESCRIPTION" colors={colors}>
+          <TextInput
+            value={description}
+            onChangeText={setDescription}
+            placeholder="Brief description of this content..."
+            placeholderTextColor={colors.mutedForeground}
+            style={[
+              styles.fieldInput,
+              { backgroundColor: colors.secondary, borderColor: colors.border, color: colors.foreground },
+            ]}
           />
         </Field>
 
