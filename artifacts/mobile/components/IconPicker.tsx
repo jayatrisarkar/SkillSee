@@ -72,7 +72,7 @@ export const AVAILABLE_ICONS = [
   "film-outline",
   "videocam-outline",
   "play-circle-outline",
-  "podcast-outline",
+  "mic-circle-outline",
   "tv-outline",
   // ── Business & Growth ──
   "trending-up-outline",

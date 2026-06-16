@@ -4,10 +4,10 @@ import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
 import React, { useEffect, useMemo, useState } from "react";
 import {
-  Alert,
   Image,
   Platform,
   ScrollView,
+  Share,
   StyleSheet,
   Switch,
   Text,
@@ -17,6 +17,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { AchievementBadge } from "@/components/AchievementBadge";
+import { ConfirmModal } from "@/components/ConfirmModal";
 import { useLibrary } from "@/context/LibraryContext";
 import { useProfile } from "@/context/ProfileContext";
 import { type ThemeMode, useTheme } from "@/context/ThemeContext";
@@ -94,6 +95,7 @@ export default function ProfileScreen() {
   const topInset = Platform.OS === "web" ? 67 : insets.top;
 
   const [notifEnabled, setNotifEnabled] = useState(false);
+  const [showLogout, setShowLogout] = useState(false);
 
   useEffect(() => {
     getNotificationsEnabled().then(setNotifEnabled);
@@ -102,13 +104,7 @@ export default function ProfileScreen() {
   async function handleToggleNotif(val: boolean) {
     if (val) {
       const granted = await requestAndEnableNotifications();
-      if (!granted) {
-        Alert.alert(
-          "Permission Needed",
-          "Please allow notifications in your device settings to enable daily reminders."
-        );
-        return;
-      }
+      if (!granted) return; // silently skip on web — no Alert
       setNotifEnabled(true);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } else {
@@ -122,6 +118,43 @@ export default function ProfileScreen() {
   const achievements = useMemo(() => computeAchievements(items, categories), [items, categories]);
   const earnedCount = achievements.filter((a) => a.earned).length;
   const customCats = categories.filter((c) => !c.isDefault);
+
+  async function handleExport() {
+    const exportData = {
+      exportedAt: new Date().toISOString(),
+      app: "SkillSee",
+      version: 1,
+      profile: { name: profile.name, username: profile.username, email: profile.email },
+      categories: categories.map((c) => ({ id: c.id, name: c.name, icon: c.icon, color: c.color })),
+      items: items.map((it) => ({
+        id: it.id,
+        title: it.title,
+        url: it.url,
+        categoryId: it.categoryId,
+        completed: it.completed,
+        savedAt: it.savedAt,
+        notes: it.notes ?? "",
+      })),
+    };
+    const json = JSON.stringify(exportData, null, 2);
+    const filename = `skillsee-${new Date().toISOString().slice(0, 10)}.json`;
+
+    if (Platform.OS === "web") {
+      // Trigger browser file download
+      const blob = new Blob([json], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } else {
+      await Share.share({ message: json, title: "SkillSee Library Export" });
+    }
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  }
 
   async function pickAvatar() {
     // On web, permissions are always granted via browser file picker
@@ -149,6 +182,7 @@ export default function ProfileScreen() {
     .toUpperCase();
 
   return (
+    <>
     <ScrollView
       style={[styles.container, { backgroundColor: colors.background }]}
       contentContainerStyle={[
@@ -276,16 +310,7 @@ export default function ProfileScreen() {
           icon="download-outline"
           label="Export Library"
           color="#10B981"
-          onPress={() =>
-            Alert.alert("Export Library", "Export as JSON with all your saved content and notes.", [
-              { text: "Cancel", style: "cancel" },
-              {
-                text: "Export",
-                onPress: () =>
-                  Alert.alert("Coming Soon", "Export feature coming in the next update."),
-              },
-            ])
-          }
+          onPress={handleExport}
         />
       </View>
 
@@ -324,16 +349,7 @@ export default function ProfileScreen() {
           icon="log-out-outline"
           label="Log Out"
           destructive
-          onPress={() =>
-            Alert.alert(
-              "Log Out",
-              "Your data is stored locally and won't be deleted.",
-              [
-                { text: "Cancel", style: "cancel" },
-                { text: "Log Out", style: "destructive", onPress: () => {} },
-              ]
-            )
-          }
+          onPress={() => setShowLogout(true)}
         />
       </View>
 
@@ -341,6 +357,17 @@ export default function ProfileScreen() {
         SkillSee v1.0 · Save. Learn. Master.
       </Text>
     </ScrollView>
+    <ConfirmModal
+      visible={showLogout}
+      title="Log Out"
+      message="Your data is stored locally and won't be deleted."
+      actions={[
+        { label: "Cancel", onPress: () => setShowLogout(false) },
+        { label: "Log Out", destructive: true, onPress: () => setShowLogout(false) },
+      ]}
+      onDismiss={() => setShowLogout(false)}
+    />
+    </>
   );
 }
 
