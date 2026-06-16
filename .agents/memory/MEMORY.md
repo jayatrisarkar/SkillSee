@@ -1,2 +1,3 @@
 - [ErrorBoundary must be inside ThemeProvider](error-boundary-theme.md) — wrapping ThemeProvider with ErrorBoundary causes blank white screen when fallback tries to call useColors().
 - [Clerk hook in context provider crashes](clerk-hook-bridge.md) — useAuth() called inside a React context provider can crash after Clerk initializes; use the module-level ClerkBridge pattern instead.
+- [react-native-worklets babel/core version lock](worklets-babel-core.md) — react-native-worklets@0.5.1 plugin does bare require('@babel/generator') and require('@babel/traverse'); bumping @babel/core past ~7.25.x breaks pnpm deduplication and makes those modules unfindable, crashing the iOS/Android production Metro bundle (HTTP 500) while dev/web builds pass.
