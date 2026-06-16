@@ -127,15 +127,6 @@ export default function ContentDetailScreen() {
             <Text style={[styles.actionPillText, { color: colors.mutedForeground }]}>Open</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            onPress={handleArchive}
-            style={[styles.actionPill, { backgroundColor: colors.secondary }]}
-          >
-            <Ionicons name="archive-outline" size={16} color={colors.mutedForeground} />
-            <Text style={[styles.actionPillText, { color: colors.mutedForeground }]}>
-              {item.isArchived ? "Unarchive" : "Archive"}
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
             onPress={handleDelete}
             style={[styles.actionPill, { backgroundColor: colors.destructive + "22" }]}
           >
