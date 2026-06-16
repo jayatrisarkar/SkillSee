@@ -307,10 +307,10 @@ export default function ProfileScreen() {
           onPress={() => router.push("/(tabs)/search")}
         />
         <SettingRow
-          icon="download-outline"
-          label="Export Library"
-          color="#10B981"
-          onPress={handleExport}
+          icon="diamond-outline"
+          label="Upgrade to SkillSee Premium"
+          color="#A855F7"
+          onPress={() => router.push("/premium")}
         />
       </View>
 
