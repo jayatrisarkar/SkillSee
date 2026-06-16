@@ -41,6 +41,7 @@ export default function AddScreen() {
   );
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
   const [isFetchingMeta, setIsFetchingMeta] = useState(false);
+  const [urlError, setUrlError] = useState("");
 
   const tagRef = useRef<TextInput>(null);
   const metaDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -49,6 +50,7 @@ export default function AddScreen() {
 
   function handleUrlChange(text: string) {
     setUrl(text);
+    if (text.trim()) setUrlError("");
 
     if (metaDebounce.current) clearTimeout(metaDebounce.current);
 
@@ -95,30 +97,33 @@ export default function AddScreen() {
 
   function handleSave() {
     if (!url.trim()) {
-      Alert.alert("URL Required", "Please enter a URL or link to save.");
+      setUrlError("Please enter a URL or link to save.");
       return;
     }
-    if (!title.trim()) {
-      Alert.alert("Title Required", "Please enter a title for this content.");
-      return;
-    }
-    if (!categoryId) {
-      Alert.alert("Category Required", "Please select a category.");
-      return;
-    }
+    setUrlError("");
 
     let finalUrl = url.trim();
     if (!finalUrl.startsWith("http://") && !finalUrl.startsWith("https://")) {
       finalUrl = "https://" + finalUrl;
     }
 
+    // Use URL hostname as fallback title if user left it blank
+    let finalTitle = title.trim();
+    if (!finalTitle) {
+      try {
+        finalTitle = new URL(finalUrl).hostname.replace(/^www\./, "");
+      } catch {
+        finalTitle = finalUrl;
+      }
+    }
+
     addItem({
-      title: title.trim(),
+      title: finalTitle,
       url: finalUrl,
       notes: notes.trim(),
       description: description.trim() || undefined,
       thumbnailUrl: thumbnailUrl ?? undefined,
-      categoryId,
+      categoryId: categoryId || undefined,
       tags,
       status,
       isArchived: false,
@@ -165,6 +170,11 @@ export default function AddScreen() {
               <ActivityIndicator size="small" color={colors.primary} />
             )}
           </View>
+          {!!urlError && (
+            <Text style={{ color: "#EF4444", fontSize: 12, marginTop: 4, marginLeft: 2 }}>
+              {urlError}
+            </Text>
+          )}
           {thumbnailUrl ? (
             <View style={[styles.thumbPreviewWrap, { borderColor: colors.border }]}>
               <Image
