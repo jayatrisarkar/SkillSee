@@ -3,6 +3,7 @@ import * as Haptics from "expo-haptics";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useRef, useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   Platform,
   ScrollView,
@@ -14,9 +15,11 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { Image } from "expo-image";
 import { useLibrary } from "@/context/LibraryContext";
 import { useColors } from "@/hooks/useColors";
 import { classifyContent } from "@/utils/classify";
+import { fetchUrlMetadata } from "@/utils/metadata";
 
 export default function AddScreen() {
   const colors = useColors();
@@ -37,29 +40,38 @@ export default function AddScreen() {
     params.categoryId ?? categories.find((c) => c.name === "Learning")?.id ?? categories[0]?.id ?? ""
   );
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
+  const [isFetchingMeta, setIsFetchingMeta] = useState(false);
 
   const tagRef = useRef<TextInput>(null);
+  const metaDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const selectedCategory = categories.find((c) => c.id === categoryId);
 
-  function extractYouTubeThumbnail(rawUrl: string): string | null {
-    const patterns = [
-      /youtube\.com\/watch\?v=([^&\s]+)/,
-      /youtu\.be\/([^?\s]+)/,
-      /youtube\.com\/shorts\/([^?\s\/]+)/,
-      /youtube\.com\/embed\/([^?\s]+)/,
-    ];
-    for (const pat of patterns) {
-      const match = rawUrl.match(pat);
-      if (match) return `https://img.youtube.com/vi/${match[1]}/hqdefault.jpg`;
-    }
-    return null;
-  }
-
   function handleUrlChange(text: string) {
     setUrl(text);
-    const thumb = extractYouTubeThumbnail(text);
-    setThumbnailUrl(thumb);
+
+    if (metaDebounce.current) clearTimeout(metaDebounce.current);
+
+    const trimmed = text.trim();
+    if (!trimmed || !trimmed.startsWith("http")) {
+      setThumbnailUrl(null);
+      return;
+    }
+
+    metaDebounce.current = setTimeout(async () => {
+      setIsFetchingMeta(true);
+      try {
+        const meta = await fetchUrlMetadata(trimmed);
+        if (meta.thumbnailUrl) setThumbnailUrl(meta.thumbnailUrl);
+        if (meta.title && !title.trim()) setTitle(meta.title);
+        if (meta.description && !description.trim()) setDescription(meta.description);
+        if (meta.title || meta.thumbnailUrl) {
+          const suggested = classifyContent(meta.title ?? trimmed, trimmed, categories);
+          setCategoryId(suggested);
+        }
+      } catch {}
+      setIsFetchingMeta(false);
+    }, 800);
   }
 
   function handleAutoClassify() {
@@ -142,14 +154,34 @@ export default function AddScreen() {
               value={url}
               onChangeText={handleUrlChange}
               onBlur={handleAutoClassify}
-              placeholder="https://..."
+              placeholder="Paste YouTube, TikTok, Instagram link…"
               placeholderTextColor={colors.mutedForeground}
               style={[styles.textInput, { color: colors.foreground }]}
               autoCapitalize="none"
               autoCorrect={false}
               keyboardType="url"
             />
+            {isFetchingMeta && (
+              <ActivityIndicator size="small" color={colors.primary} />
+            )}
           </View>
+          {thumbnailUrl ? (
+            <View style={[styles.thumbPreviewWrap, { borderColor: colors.border }]}>
+              <Image
+                source={{ uri: thumbnailUrl }}
+                style={styles.thumbPreview}
+                contentFit="cover"
+                transition={300}
+              />
+              <TouchableOpacity
+                style={styles.thumbClear}
+                onPress={() => setThumbnailUrl(null)}
+                hitSlop={8}
+              >
+                <Ionicons name="close-circle" size={22} color="#fff" />
+              </TouchableOpacity>
+            </View>
+          ) : null}
         </Field>
 
         <Field label="TITLE" colors={colors}>
@@ -372,6 +404,22 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontFamily: "Inter_400Regular",
     padding: 0,
+  },
+  thumbPreviewWrap: {
+    marginTop: 8,
+    borderRadius: 12,
+    borderWidth: 1,
+    overflow: "hidden",
+    position: "relative",
+  },
+  thumbPreview: {
+    width: "100%",
+    height: 160,
+  },
+  thumbClear: {
+    position: "absolute",
+    top: 8,
+    right: 8,
   },
   catSelector: {
     flexDirection: "row",
