@@ -229,7 +229,7 @@ const styles = StyleSheet.create({
   },
   greetingBlock: { gap: 2 },
   greeting: { fontSize: 13, fontFamily: "Inter_500Medium", letterSpacing: 0.2 },
-  titleRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+  titleRow: { flexDirection: "row", alignItems: "center" },
   titleBrand: { fontSize: 28, fontFamily: "Inter_700Bold", letterSpacing: -0.8 },
   avatarSmall: {
     width: 42,
