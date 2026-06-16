@@ -25,3 +25,6 @@ tabBarButton: AddButton,
 Also: the tab screen component itself (`(tabs)/add.tsx`) should NOT use `useRouter()` at top level during initialization — use a plain `<View />` placeholder. The `router` singleton is confirmed exported from expo-router@6.0.24 (`exports.router = imperative_api_1.router`).
 
 **Confirmed:** `<Redirect>` from expo-router inside a tab screen also causes the crash for the same reason.
+
+## Additional gotcha — route name collision
+The placeholder tab file inside `(tabs)/` must NOT share the same name as a root-level screen. E.g. `(tabs)/add.tsx` + `app/add.tsx` both resolve to `/add`, causing `router.push("/add")` to switch to the blank tab instead of opening the root modal. Fix: rename the placeholder (e.g. `(tabs)/new.tsx`) so only the root screen owns `/add`.

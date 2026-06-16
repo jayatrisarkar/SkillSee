@@ -114,7 +114,7 @@ function ClassicTabLayout() {
         }}
       />
       <Tabs.Screen
-        name="add"
+        name="new"
         options={{
           title: "",
           tabBarButton: AddButton,
