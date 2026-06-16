@@ -1,9 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
-import React from "react";
+import React, { useState } from "react";
 import {
-  Alert,
   Linking,
   StyleSheet,
   Text,
@@ -77,21 +76,18 @@ export function ContentCard({
   const colors = useColors();
   const statusConfig = STATUS_CONFIG[item.status];
   const hasThumbnail = !!item.thumbnailUrl;
+  const [pendingDelete, setPendingDelete] = useState(false);
 
   const handleLongPress = () => {
+    if (!onDelete) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    Alert.alert(item.title, "What would you like to do?", [
-      { text: "Open Link", onPress: () => Linking.openURL(item.url) },
-      { text: "Edit", onPress },
-      { text: "Delete", style: "destructive", onPress: onDelete },
-      { text: "Cancel", style: "cancel" },
-    ]);
+    setPendingDelete(true);
   };
 
   return (
     <TouchableOpacity
-      style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}
-      onPress={onPress}
+      style={[styles.card, { backgroundColor: colors.card, borderColor: pendingDelete ? "#EF4444" : colors.border }]}
+      onPress={pendingDelete ? () => setPendingDelete(false) : onPress}
       onLongPress={handleLongPress}
       activeOpacity={0.8}
     >
@@ -167,8 +163,38 @@ export function ContentCard({
               <Text style={[styles.statusText, { color: statusConfig.color }]}>{statusConfig.label}</Text>
             </View>
           )}
+
+          {onDelete && (
+            <TouchableOpacity
+              onPress={(e) => { e.stopPropagation?.(); setPendingDelete(true); }}
+              style={styles.trashBtn}
+              hitSlop={6}
+            >
+              <Ionicons name="trash-outline" size={14} color={colors.mutedForeground} />
+            </TouchableOpacity>
+          )}
         </View>
       </View>
+
+      {pendingDelete && (
+        <View style={[styles.deleteStrip, { backgroundColor: "#EF444422", borderTopColor: "#EF4444" }]}>
+          <Text style={styles.deleteStripText}>Delete this item?</Text>
+          <View style={styles.deleteStripBtns}>
+            <TouchableOpacity
+              style={[styles.deleteStripBtn, { backgroundColor: "#EF4444" }]}
+              onPress={(e) => { e.stopPropagation?.(); onDelete?.(); setPendingDelete(false); }}
+            >
+              <Text style={styles.deleteStripBtnText}>Delete</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.deleteStripBtn, { backgroundColor: "transparent", borderWidth: 1, borderColor: colors.border }]}
+              onPress={(e) => { e.stopPropagation?.(); setPendingDelete(false); }}
+            >
+              <Text style={[styles.deleteStripBtnText, { color: colors.foreground }]}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
     </TouchableOpacity>
   );
 }
@@ -272,5 +298,38 @@ const styles = StyleSheet.create({
   statusText: {
     fontSize: 11,
     fontFamily: "Inter_500Medium",
+  },
+  trashBtn: {
+    marginLeft: "auto",
+    padding: 4,
+  },
+  deleteStrip: {
+    borderTopWidth: 1,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 10,
+  },
+  deleteStripText: {
+    fontSize: 13,
+    fontFamily: "Inter_500Medium",
+    color: "#EF4444",
+    flex: 1,
+  },
+  deleteStripBtns: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  deleteStripBtn: {
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 8,
+  },
+  deleteStripBtnText: {
+    fontSize: 13,
+    fontFamily: "Inter_600SemiBold",
+    color: "#FFFFFF",
   },
 });

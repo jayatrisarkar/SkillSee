@@ -3,7 +3,6 @@ import * as Haptics from "expo-haptics";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useRef, useState } from "react";
 import {
-  Alert,
   Linking,
   Platform,
   ScrollView,
@@ -15,6 +14,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { ConfirmModal } from "@/components/ConfirmModal";
 import { type ContentStatus, useLibrary } from "@/context/LibraryContext";
 import { useColors } from "@/hooks/useColors";
 
@@ -35,6 +35,8 @@ export default function ContentDetailScreen() {
   const [categoryId, setCategoryId] = useState(item?.categoryId ?? "");
   const [showCatPicker, setShowCatPicker] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
 
   const tagRef = useRef<TextInput>(null);
 
@@ -68,18 +70,13 @@ export default function ContentDetailScreen() {
   }
 
   function handleDelete() {
-    Alert.alert("Delete Item", `Delete "${item.title}"?`, [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Delete",
-        style: "destructive",
-        onPress: () => {
-          deleteItem(item.id);
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-          router.back();
-        },
-      },
-    ]);
+    setShowDeleteConfirm(true);
+  }
+
+  function confirmDelete() {
+    deleteItem(item.id);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+    router.back();
   }
 
   function handleArchive() {
@@ -113,11 +110,7 @@ export default function ContentDetailScreen() {
       <View style={[styles.topBar, { paddingTop: topInset + 8, borderBottomColor: colors.border }]}>
         <TouchableOpacity onPress={() => {
           if (isDirty) {
-            Alert.alert("Unsaved Changes", "Save your changes?", [
-              { text: "Discard", style: "destructive", onPress: () => router.back() },
-              { text: "Save", onPress: handleSave },
-              { text: "Keep editing", style: "cancel" },
-            ]);
+            setShowDiscardConfirm(true);
           } else {
             router.back();
           }
@@ -297,6 +290,29 @@ export default function ContentDetailScreen() {
           </TouchableOpacity>
         )}
       </ScrollView>
+
+      <ConfirmModal
+        visible={showDeleteConfirm}
+        title="Delete Item"
+        message={`Delete "${item.title}"? This cannot be undone.`}
+        onDismiss={() => setShowDeleteConfirm(false)}
+        actions={[
+          { label: "Cancel", onPress: () => {} },
+          { label: "Delete", destructive: true, onPress: confirmDelete },
+        ]}
+      />
+
+      <ConfirmModal
+        visible={showDiscardConfirm}
+        title="Unsaved Changes"
+        message="You have unsaved changes. What would you like to do?"
+        onDismiss={() => setShowDiscardConfirm(false)}
+        actions={[
+          { label: "Keep Editing", onPress: () => {} },
+          { label: "Save", primary: true, onPress: handleSave },
+          { label: "Discard", destructive: true, onPress: () => router.back() },
+        ]}
+      />
     </View>
   );
 }
@@ -448,3 +464,4 @@ const styles = StyleSheet.create({
   },
   saveBtnText: { fontSize: 16, fontFamily: "Inter_600SemiBold" },
 });
+

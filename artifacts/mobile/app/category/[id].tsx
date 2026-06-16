@@ -3,7 +3,6 @@ import * as Haptics from "expo-haptics";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useMemo, useState } from "react";
 import {
-  Alert,
   FlatList,
   Platform,
   ScrollView,
@@ -15,10 +14,11 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { ConfirmModal } from "@/components/ConfirmModal";
 import { ContentCard } from "@/components/ContentCard";
 import { EmptyState } from "@/components/EmptyState";
 import { IconPicker } from "@/components/IconPicker";
-import { useLibrary } from "@/context/LibraryContext";
+import { type ContentItem, useLibrary } from "@/context/LibraryContext";
 import { useColors } from "@/hooks/useColors";
 
 type SortOption = "newest" | "oldest" | "completed" | "learning";
@@ -37,6 +37,7 @@ export default function CategoryScreen() {
   const [editColor, setEditColor] = useState(category?.color ?? "#6366F1");
   const [sort, setSort] = useState<SortOption>("newest");
   const [showArchived, setShowArchived] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<ContentItem | null>(null);
 
   const topInset = Platform.OS === "web" ? 67 : insets.top;
 
@@ -197,19 +198,7 @@ export default function CategoryScreen() {
             item={item}
             categoryColor={category.color}
             onPress={() => router.push(`/content/${item.id}`)}
-            onDelete={() => {
-              Alert.alert("Delete Item", `Delete "${item.title}"?`, [
-                { text: "Cancel", style: "cancel" },
-                {
-                  text: "Delete",
-                  style: "destructive",
-                  onPress: () => {
-                    deleteItem(item.id);
-                    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-                  },
-                },
-              ]);
-            }}
+            onDelete={() => setItemToDelete(item)}
           />
         )}
         ListEmptyComponent={
@@ -223,6 +212,26 @@ export default function CategoryScreen() {
             />
           </View>
         }
+      />
+
+      <ConfirmModal
+        visible={!!itemToDelete}
+        title="Delete Item"
+        message={itemToDelete ? `Delete "${itemToDelete.title}"? This cannot be undone.` : ""}
+        onDismiss={() => setItemToDelete(null)}
+        actions={[
+          { label: "Cancel", onPress: () => {} },
+          {
+            label: "Delete",
+            destructive: true,
+            onPress: () => {
+              if (itemToDelete) {
+                deleteItem(itemToDelete.id);
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+              }
+            },
+          },
+        ]}
       />
     </View>
   );

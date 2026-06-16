@@ -1,9 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
-import React from "react";
+import React, { useState } from "react";
 import {
-  Alert,
   FlatList,
   Platform,
   StyleSheet,
@@ -13,6 +12,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { ConfirmModal } from "@/components/ConfirmModal";
 import { EmptyState } from "@/components/EmptyState";
 import { type Category, useLibrary } from "@/context/LibraryContext";
 import { useColors } from "@/hooks/useColors";
@@ -22,58 +22,41 @@ export default function CategoriesScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { categories, items, deleteCategory } = useLibrary();
+  const [catToDelete, setCatToDelete] = useState<Category | null>(null);
 
   const topInset = Platform.OS === "web" ? 67 : insets.top;
 
   function handleDelete(cat: Category) {
+    const others = categories.filter((c) => c.id !== cat.id);
+    if (others.length === 0) return; // can't delete last category
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setCatToDelete(cat);
+  }
+
+  function buildDeleteActions(cat: Category) {
     const count = items.filter((it) => it.categoryId === cat.id).length;
     const others = categories.filter((c) => c.id !== cat.id);
-
-    if (others.length === 0) {
-      Alert.alert("Cannot Delete", "You need at least one category.");
-      return;
+    const target = others.find((c) => c.name === "Learning") ?? others[0];
+    const actions = [{ label: "Cancel", onPress: () => {} }] as Array<{ label: string; onPress: () => void; destructive?: boolean; primary?: boolean }>;
+    if (count > 0) {
+      actions.push({
+        label: `Move ${count} item${count !== 1 ? "s" : ""} to ${target.name}`,
+        primary: true,
+        onPress: () => {
+          deleteCategory(cat.id, target.id);
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        },
+      });
     }
-
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-
-    if (count === 0) {
-      Alert.alert("Delete Category", `Delete "${cat.name}"?`, [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: () => {
-            deleteCategory(cat.id, null);
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-          },
-        },
-      ]);
-      return;
-    }
-
-    Alert.alert(
-      "Delete Category",
-      `"${cat.name}" has ${count} ${count === 1 ? "item" : "items"}. What should happen to them?`,
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Move to Learning",
-          onPress: () => {
-            const target = others.find((c) => c.name === "Learning") ?? others[0];
-            deleteCategory(cat.id, target.id);
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-          },
-        },
-        {
-          text: "Delete All Items",
-          style: "destructive",
-          onPress: () => {
-            deleteCategory(cat.id, null);
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-          },
-        },
-      ]
-    );
+    actions.push({
+      label: count > 0 ? "Delete Category & Items" : "Delete",
+      destructive: true,
+      onPress: () => {
+        deleteCategory(cat.id, null);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      },
+    });
+    return actions;
   }
 
   return (
@@ -150,6 +133,20 @@ export default function CategoriesScreen() {
         }}
         ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
       />
+
+      {catToDelete && (
+        <ConfirmModal
+          visible={!!catToDelete}
+          title={`Delete "${catToDelete.name}"?`}
+          message={
+            items.filter((it) => it.categoryId === catToDelete.id).length > 0
+              ? `This category has items. Choose what to do with them.`
+              : "This category will be permanently deleted."
+          }
+          onDismiss={() => setCatToDelete(null)}
+          actions={buildDeleteActions(catToDelete)}
+        />
+      )}
     </View>
   );
 }
