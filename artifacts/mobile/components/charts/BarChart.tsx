@@ -2,6 +2,8 @@ import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 import Svg, { Defs, LinearGradient, Rect, Stop } from "react-native-svg";
 
+import { useColors } from "@/hooks/useColors";
+
 interface BarChartProps {
   data: number[];
   labels?: string[];
@@ -17,6 +19,7 @@ export function BarChart({
   height = 120,
   barRadius = 5,
 }: BarChartProps) {
+  const colors = useColors();
   const max = Math.max(...data, 1);
   const barCount = data.length;
   const chartWidth = 280;
@@ -43,7 +46,7 @@ export function BarChart({
               width={barWidth}
               height={barH}
               rx={barRadius}
-              fill={val > 0 ? "url(#barGrad)" : "#1E293B"}
+              fill={val > 0 ? "url(#barGrad)" : colors.secondary}
             />
           );
         })}
@@ -53,7 +56,7 @@ export function BarChart({
           {labels.map((label, i) => (
             <Text
               key={i}
-              style={[styles.label, { width: barWidth + 6 }]}
+              style={[styles.label, { width: barWidth + 6, color: colors.mutedForeground }]}
               numberOfLines={1}
             >
               {label}
@@ -74,7 +77,6 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 10,
     fontFamily: "Inter_400Regular",
-    color: "#64748B",
     textAlign: "center",
   },
 });

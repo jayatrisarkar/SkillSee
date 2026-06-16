@@ -2,6 +2,8 @@ import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 import Svg, { Rect } from "react-native-svg";
 
+import { useColors } from "@/hooks/useColors";
+
 const CELL = 14;
 const GAP = 3;
 const COLS = 7;
@@ -15,6 +17,7 @@ interface ActivityHeatmapProps {
 const DAY_LABELS = ["S", "M", "T", "W", "T", "F", "S"];
 
 export function ActivityHeatmap({ data, color = "#6366F1" }: ActivityHeatmapProps) {
+  const colors = useColors();
   const max = Math.max(...data, 1);
   const total = data.reduce((a, b) => a + b, 0);
 
@@ -27,21 +30,12 @@ export function ActivityHeatmap({ data, color = "#6366F1" }: ActivityHeatmapProp
   const gridW = COLS * (CELL + GAP) - GAP;
   const gridH = ROWS * (CELL + GAP) - GAP;
 
-  const today = new Date();
-  const dayOfWeek = today.getDay();
-  const weekLabels: string[] = [];
-  for (let w = COLS - 1; w >= 0; w--) {
-    const d = new Date(today);
-    d.setDate(d.getDate() - w * 7);
-    weekLabels.push(d.toLocaleDateString("en", { month: "short", day: "numeric" }));
-  }
-
   return (
     <View style={styles.container}>
       <View style={styles.row}>
         <View style={styles.dayLabels}>
           {DAY_LABELS.map((d, i) => (
-            <Text key={i} style={styles.dayLabel}>{d}</Text>
+            <Text key={i} style={[styles.dayLabel, { color: colors.mutedForeground }]}>{d}</Text>
           ))}
         </View>
         <View>
@@ -59,7 +53,7 @@ export function ActivityHeatmap({ data, color = "#6366F1" }: ActivityHeatmapProp
                     width={CELL}
                     height={CELL}
                     rx={3}
-                    fill={val === 0 ? "#1E293B" : color}
+                    fill={val === 0 ? colors.secondary : color}
                     opacity={val === 0 ? 1 : opacity}
                   />
                 );
@@ -67,8 +61,8 @@ export function ActivityHeatmap({ data, color = "#6366F1" }: ActivityHeatmapProp
             )}
           </Svg>
           <View style={[styles.weekRow, { width: gridW }]}>
-            {weekLabels.map((label, i) => (
-              <Text key={i} style={[styles.weekLabel, { width: CELL + GAP }]} numberOfLines={1}>
+            {Array.from({ length: COLS }).map((_, i) => (
+              <Text key={i} style={[styles.weekLabel, { width: CELL + GAP, color: colors.mutedForeground }]} numberOfLines={1}>
                 {i === COLS - 1 ? "now" : ""}
               </Text>
             ))}
@@ -76,7 +70,7 @@ export function ActivityHeatmap({ data, color = "#6366F1" }: ActivityHeatmapProp
         </View>
       </View>
       <View style={styles.legendRow}>
-        <Text style={styles.legendText}>Less</Text>
+        <Text style={[styles.legendText, { color: colors.mutedForeground }]}>Less</Text>
         {[0, 0.25, 0.5, 0.75, 1].map((op, i) => (
           <Svg key={i} width={CELL} height={CELL}>
             <Rect
@@ -85,13 +79,13 @@ export function ActivityHeatmap({ data, color = "#6366F1" }: ActivityHeatmapProp
               width={CELL}
               height={CELL}
               rx={3}
-              fill={op === 0 ? "#1E293B" : color}
+              fill={op === 0 ? colors.secondary : color}
               opacity={op === 0 ? 1 : 0.2 + op * 0.8}
             />
           </Svg>
         ))}
-        <Text style={styles.legendText}>More</Text>
-        <Text style={[styles.legendText, { marginLeft: "auto" }]}>{total} total</Text>
+        <Text style={[styles.legendText, { color: colors.mutedForeground }]}>More</Text>
+        <Text style={[styles.legendText, { color: colors.mutedForeground, marginLeft: "auto" }]}>{total} total</Text>
       </View>
     </View>
   );
@@ -109,7 +103,6 @@ const styles = StyleSheet.create({
   dayLabel: {
     fontSize: 10,
     fontFamily: "Inter_400Regular",
-    color: "#64748B",
     height: CELL,
     lineHeight: CELL,
     textAlign: "center",
@@ -121,7 +114,6 @@ const styles = StyleSheet.create({
   weekLabel: {
     fontSize: 9,
     fontFamily: "Inter_400Regular",
-    color: "#64748B",
     textAlign: "center",
   },
   legendRow: {
@@ -133,6 +125,5 @@ const styles = StyleSheet.create({
   legendText: {
     fontSize: 10,
     fontFamily: "Inter_400Regular",
-    color: "#64748B",
   },
 });

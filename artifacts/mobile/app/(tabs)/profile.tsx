@@ -18,6 +18,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AchievementBadge } from "@/components/AchievementBadge";
 import { useLibrary } from "@/context/LibraryContext";
 import { useProfile } from "@/context/ProfileContext";
+import { type ThemeMode, useTheme } from "@/context/ThemeContext";
 import { useColors } from "@/hooks/useColors";
 import { computeAchievements, computeStats } from "@/utils/insights";
 
@@ -59,12 +60,18 @@ function SettingRow({ icon, label, color, onPress, value, destructive }: Setting
 function StatBubble({ value, label }: { value: string; label: string }) {
   const colors = useColors();
   return (
-    <View style={[styles.statBubble, { backgroundColor: colors.secondary }]}>
+    <View style={[styles.statBubble, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
       <Text style={[styles.statBubbleValue, { color: colors.foreground }]}>{value}</Text>
       <Text style={[styles.statBubbleLabel, { color: colors.mutedForeground }]}>{label}</Text>
     </View>
   );
 }
+
+const THEME_OPTIONS: { key: ThemeMode; label: string; icon: string }[] = [
+  { key: "system", label: "System", icon: "phone-portrait-outline" },
+  { key: "light", label: "Light", icon: "sunny-outline" },
+  { key: "dark", label: "Dark", icon: "moon-outline" },
+];
 
 export default function ProfileScreen() {
   const colors = useColors();
@@ -72,6 +79,7 @@ export default function ProfileScreen() {
   const router = useRouter();
   const { profile, updateProfile } = useProfile();
   const { items, categories } = useLibrary();
+  const { themeMode, setThemeMode } = useTheme();
 
   const topInset = Platform.OS === "web" ? 67 : insets.top;
 
@@ -117,16 +125,18 @@ export default function ProfileScreen() {
       ]}
       showsVerticalScrollIndicator={false}
     >
-      <View style={styles.profileHeader}>
+      <Text style={[styles.screenTitle, { color: colors.foreground }]}>Profile</Text>
+
+      <View style={[styles.profileCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
         <TouchableOpacity style={styles.avatarWrap} onPress={pickAvatar} activeOpacity={0.8}>
           {profile.avatarUri ? (
             <Image source={{ uri: profile.avatarUri }} style={styles.avatar} />
           ) : (
-            <View style={[styles.avatarFallback, { backgroundColor: colors.primary + "33" }]}>
+            <View style={[styles.avatarFallback, { backgroundColor: colors.primary + "22" }]}>
               <Text style={[styles.initials, { color: colors.primary }]}>{initials || "?"}</Text>
             </View>
           )}
-          <View style={[styles.cameraBtn, { backgroundColor: colors.primary }]}>
+          <View style={[styles.cameraBtn, { backgroundColor: colors.primary, borderColor: colors.background }]}>
             <Ionicons name="camera" size={12} color="#FFFFFF" />
           </View>
         </TouchableOpacity>
@@ -144,17 +154,17 @@ export default function ProfileScreen() {
         </TouchableOpacity>
       </View>
 
-      <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>PERSONAL STATISTICS</Text>
+      <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>STATISTICS</Text>
       <View style={styles.statsGrid}>
         <StatBubble value={String(stats.totalSaved)} label="Total Saves" />
         <StatBubble value={String(stats.totalCompleted)} label="Completed" />
         <StatBubble value={`${stats.streak}d`} label="Streak" />
         <StatBubble value={String(categories.length)} label="Categories" />
-        <StatBubble value={String(customCats.length)} label="Custom Cats" />
-        <StatBubble value={`${stats.estimatedHours}h`} label="Est. Learned" />
+        <StatBubble value={String(customCats.length)} label="Custom" />
+        <StatBubble value={`${stats.estimatedHours}h`} label="Est. Hours" />
       </View>
 
-      <View style={[styles.achievementHeader]}>
+      <View style={styles.achievementHeader}>
         <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>ACHIEVEMENTS</Text>
         <Text style={[styles.earnedCount, { color: colors.primary }]}>{earnedCount}/{achievements.length}</Text>
       </View>
@@ -163,6 +173,46 @@ export default function ProfileScreen() {
           <AchievementBadge key={a.id} achievement={a} />
         ))}
       </ScrollView>
+
+      <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>APPEARANCE</Text>
+      <View style={[styles.themeCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <View style={styles.themeRow}>
+          {THEME_OPTIONS.map((opt) => {
+            const isActive = themeMode === opt.key;
+            return (
+              <TouchableOpacity
+                key={opt.key}
+                style={[
+                  styles.themeBtn,
+                  {
+                    backgroundColor: isActive ? colors.primary : colors.secondary,
+                    borderColor: isActive ? colors.primary : colors.border,
+                  },
+                ]}
+                onPress={() => {
+                  setThemeMode(opt.key);
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                }}
+                activeOpacity={0.8}
+              >
+                <Ionicons
+                  name={opt.icon as any}
+                  size={18}
+                  color={isActive ? "#FFFFFF" : colors.mutedForeground}
+                />
+                <Text
+                  style={[
+                    styles.themeBtnText,
+                    { color: isActive ? "#FFFFFF" : colors.mutedForeground },
+                  ]}
+                >
+                  {opt.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      </View>
 
       <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>MANAGE</Text>
       <View style={[styles.settingsGroup, { backgroundColor: colors.card, borderColor: colors.border }]}>
@@ -203,17 +253,10 @@ export default function ProfileScreen() {
           onPress={() => Alert.alert("Coming Soon", "Push notification settings coming soon.")}
         />
         <SettingRow
-          icon="moon-outline"
-          label="Dark Mode"
-          color="#64748B"
-          value="On"
-          onPress={() => Alert.alert("Dark Mode", "The app uses your system appearance setting.")}
-        />
-        <SettingRow
           icon="lock-closed-outline"
           label="Privacy Settings"
           color="#64748B"
-          onPress={() => Alert.alert("Privacy", "All your data is stored locally on your device.")}
+          onPress={() => Alert.alert("Privacy", "All your data is stored locally on your device. Nothing is shared externally.")}
         />
         <SettingRow
           icon="settings-outline"
@@ -229,7 +272,7 @@ export default function ProfileScreen() {
           label="Log Out"
           destructive
           onPress={() =>
-            Alert.alert("Log Out", "Your data is stored locally. Logging out won't delete it.", [
+            Alert.alert("Log Out", "Your data is stored locally and won't be deleted.", [
               { text: "Cancel", style: "cancel" },
               { text: "Log Out", style: "destructive", onPress: () => {} },
             ])
@@ -238,7 +281,7 @@ export default function ProfileScreen() {
       </View>
 
       <Text style={[styles.version, { color: colors.mutedForeground }]}>
-        Content Library v1.0 · Built with ❤️
+        SkillFlow v1.0 · Save. Learn. Master.
       </Text>
     </ScrollView>
   );
@@ -247,8 +290,15 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   content: { paddingHorizontal: 16, gap: 12 },
-  profileHeader: { alignItems: "center", paddingVertical: 16, gap: 6 },
-  avatarWrap: { position: "relative", marginBottom: 8 },
+  screenTitle: { fontSize: 28, fontFamily: "Inter_700Bold", letterSpacing: -0.5, marginBottom: 4 },
+  profileCard: {
+    borderRadius: 18,
+    borderWidth: 1,
+    padding: 20,
+    alignItems: "center",
+    gap: 6,
+  },
+  avatarWrap: { position: "relative", marginBottom: 4 },
   avatar: { width: 88, height: 88, borderRadius: 44 },
   avatarFallback: {
     width: 88,
@@ -268,9 +318,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 2,
-    borderColor: "#0D1117",
   },
-  profileName: { fontSize: 22, fontFamily: "Inter_700Bold", letterSpacing: -0.3 },
+  profileName: { fontSize: 20, fontFamily: "Inter_700Bold", letterSpacing: -0.3 },
   profileUsername: { fontSize: 14, fontFamily: "Inter_400Regular" },
   profileEmail: { fontSize: 13, fontFamily: "Inter_400Regular" },
   editBtn: {
@@ -281,30 +330,54 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 20,
     borderWidth: 1,
-    marginTop: 8,
+    marginTop: 6,
   },
   editBtnText: { fontSize: 13, fontFamily: "Inter_500Medium" },
   sectionLabel: {
     fontSize: 11,
     fontFamily: "Inter_600SemiBold",
     letterSpacing: 1,
-    marginTop: 8,
-    marginBottom: -4,
+    marginTop: 6,
+    marginBottom: -2,
   },
-  statsGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
+  statsGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   statBubble: {
     width: "30%",
     flexGrow: 1,
     borderRadius: 12,
-    padding: 14,
+    borderWidth: 1,
+    padding: 12,
     alignItems: "center",
     gap: 4,
   },
   statBubbleValue: { fontSize: 20, fontFamily: "Inter_700Bold" },
   statBubbleLabel: { fontSize: 11, fontFamily: "Inter_500Medium", textAlign: "center" },
-  achievementHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  achievementHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 6,
+    marginBottom: -2,
+  },
   earnedCount: { fontSize: 13, fontFamily: "Inter_600SemiBold" },
   badgeRow: { gap: 12, paddingVertical: 4 },
+  themeCard: {
+    borderRadius: 14,
+    borderWidth: 1,
+    padding: 12,
+  },
+  themeRow: { flexDirection: "row", gap: 8 },
+  themeBtn: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    paddingVertical: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  themeBtnText: { fontSize: 13, fontFamily: "Inter_600SemiBold" },
   settingsGroup: {
     borderRadius: 14,
     borderWidth: 1,
@@ -327,5 +400,5 @@ const styles = StyleSheet.create({
   },
   settingLabel: { flex: 1, fontSize: 15, fontFamily: "Inter_400Regular" },
   settingValue: { fontSize: 13, fontFamily: "Inter_400Regular" },
-  version: { fontSize: 12, fontFamily: "Inter_400Regular", textAlign: "center", marginTop: 8 },
+  version: { fontSize: 12, fontFamily: "Inter_400Regular", textAlign: "center", marginTop: 8, marginBottom: 4 },
 });

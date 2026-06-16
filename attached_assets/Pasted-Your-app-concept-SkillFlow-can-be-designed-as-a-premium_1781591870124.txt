@@ -1,0 +1,318 @@
+Your app concept SkillFlow can be designed as a premium knowledge-learning vault with full user control and modern UX.
+
+SkillFlow
+Tagline
+
+Save. Learn. Master.
+
+First Launch Experience
+Welcome Popup
+
+When users open the app for the first time:
+
+Popup Screen
+
+🎓 SkillFlow Logo (Premium Gradient)
+
+Welcome to SkillFlow
+
+Your personal learning vault.
+
+Save videos, reels, posts, articles, and tutorials from anywhere and organize them into skills that help you grow.
+
+✅ Save Content
+
+✅ Organize Skills
+
+✅ Track Learning Progress
+
+✅ Learn Smarter with AI
+
+[Get Started]
+
+Theme System
+Light Mode
+Clean white background
+Blue/Purple premium gradients
+Soft shadows
+Modern cards
+Dark Mode
+Deep black background
+Neon blue accents
+Premium glassmorphism effects
+Smooth transitions
+Settings
+
+Users can:
+
+Switch Light Mode
+Switch Dark Mode
+System Default
+
+Theme changes instantly throughout the app.
+
+Logo Concept
+
+SkillFlow Logo:
+
+📘 + ⚡
+
+A flowing "S" shape representing learning progress.
+
+Colors:
+
+Electric Blue
+Purple Gradient
+White Accent
+
+Premium and modern.
+
+Content Organization System
+Default Categories
+Dance
+Singing
+Instruments
+Coding
+Finance
+Gym & Fitness
+Cooking
+Art
+Learning
+
+AI automatically analyzes content and places it into the most relevant category.
+
+Example:
+
+YouTube Guitar Tutorial → Instruments
+
+Python Course → Coding
+
+Stock Analysis Video → Finance
+
+Custom Categories
+
+Users can create unlimited categories.
+
+Examples:
+
+Guitar Lessons
+Stock Market
+Startup Ideas
+Anime Drawing
+Makeup Tutorials
+Exam Preparation
+Business Growth
+Photography
+
+Users can:
+
+✅ Create
+
+✅ Rename
+
+✅ Delete
+
+✅ Change Icons
+
+✅ Change Colors
+
+✅ Reorder Categories
+
+✅ Move Content Between Categories
+
+Smart AI Classification
+
+When saving content:
+
+AI analyzes:
+
+Video title
+Description
+Captions
+Hashtags
+
+Then automatically categorizes.
+
+If confidence is low:
+
+Move to:
+
+Learning
+
+Popup:
+
+"We couldn't confidently categorize this content."
+
+Choose Category:
+
+Coding
+Finance
+Art
+Custom Category
+Supported Content Sources
+
+Users can paste links from:
+
+Video Platforms
+YouTube
+Shorts
+Instagram Reels
+Facebook Videos
+TikTok
+Vimeo
+Social Media
+Instagram Posts
+Facebook Posts
+X (Twitter)
+Threads
+LinkedIn Posts
+Websites
+Blogs
+Tutorials
+Courses
+Articles
+Documentation
+
+All pasted links should open correctly inside SkillFlow.
+
+Saved Content Management
+
+For every saved item users can:
+
+Edit
+Title
+Notes
+Tags
+Category
+Learning Status
+Mark as Learning
+Mark as Completed
+Organization
+Move Category
+Archive
+Restore
+Delete
+
+Permanent Delete
+
+Immediately removes content from library.
+
+Confirmation:
+
+"Delete permanently?"
+
+[Cancel] [Delete]
+
+Category Management
+
+Users can:
+
+Create Category
+
+Choose:
+
+Name
+Icon
+Color
+Edit Category
+Rename
+Change Icon
+Change Color
+Delete Category
+
+Options:
+
+Move Items
+
+Move all items to another category.
+
+OR
+
+Delete Everything
+
+Delete category and all contents.
+
+Confirmation required.
+
+Library Features
+Search
+
+Search by:
+
+Title
+Notes
+Tags
+Source Platform
+Filters
+
+Filter by:
+
+Category
+Learning
+Completed
+Archived
+Sorting
+Newest First
+Oldest First
+Recently Opened
+Most Viewed
+Completed
+Learning
+Premium Dashboard
+Statistics
+
+Display:
+
+Total Saved Content
+Learning Items
+Completed Items
+Categories Created
+Learning Streak
+
+Example:
+
+Saved: 543
+
+Learning: 87
+
+Completed: 221
+
+Streak: 32 Days
+
+User Profile
+
+Users can:
+
+Upload Profile Picture
+Change Name
+Change Theme
+Export Data
+Import Data
+Backup Library
+Notifications
+
+Examples:
+
+📚 You haven't continued your Python course in 7 days.
+
+🎨 3 Art tutorials are waiting.
+
+💪 Complete your Gym category today.
+
+Premium UI Style
+
+Design Language:
+
+Apple-level smoothness
+Notion-style organization
+Spotify-like animations
+Premium gradients
+Rounded cards
+Glassmorphism effects
+Fast loading
+Responsive on all devices
+Core Principle
+
+SkillFlow is not just a bookmark app.
+
+It is a personal knowledge vault where users can save content from any platform, organize it into skills, track learning progress, and maintain complete control over their learning journey with AI-powered categorization and a premium experience.
