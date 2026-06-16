@@ -48,24 +48,29 @@ export default function CategoryScreen() {
     const allItems = items.filter((it) => it.categoryId === category.id && !it.isArchived);
     if (allItems.length === 0) return;
 
-    const icon = category.icon?.includes("music") ? "🎵"
-      : category.icon?.includes("book") ? "📚"
-      : category.icon?.includes("fitness") ? "💪"
-      : category.icon?.includes("code") ? "💻"
-      : category.icon?.includes("brush") ? "🎨"
-      : "📋";
+    const data = {
+      n: category.name,
+      i: category.icon,
+      c: category.color,
+      items: allItems.map((it) => ({ t: it.title, u: it.url })),
+    };
 
-    const lines = allItems.map((it, i) => `${i + 1}. ${it.title}\n   ${it.url}`);
-    const text = `${icon} ${category.name} Playlist — SkillSee\n${allItems.length} saved ${allItems.length === 1 ? "video" : "videos"}\n\n${lines.join("\n\n")}\n\n— Shared from SkillSee`;
+    const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(data))));
+
+    const origin =
+      Platform.OS === "web"
+        ? window.location.origin
+        : `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
+
+    const playlistUrl = `${origin}/playlist?d=${encoded}`;
 
     try {
       if (Platform.OS === "web") {
         if (navigator.clipboard) {
-          await navigator.clipboard.writeText(text);
+          await navigator.clipboard.writeText(playlistUrl);
         } else {
-          // fallback: create a temporary textarea
           const ta = document.createElement("textarea");
-          ta.value = text;
+          ta.value = playlistUrl;
           document.body.appendChild(ta);
           ta.select();
           document.execCommand("copy");
@@ -75,7 +80,11 @@ export default function CategoryScreen() {
         setShareCopied(true);
         setTimeout(() => setShareCopied(false), 2500);
       } else {
-        await Share.share({ message: text, title: `${category.name} Playlist` });
+        await Share.share({
+          message: `Check out my ${category.name} playlist on SkillSee 👇\n${playlistUrl}`,
+          url: playlistUrl,
+          title: `${category.name} Playlist`,
+        });
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       }
     } catch {

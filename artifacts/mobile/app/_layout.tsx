@@ -31,6 +31,7 @@ function RootLayoutNav() {
       <Stack.Screen name="edit-profile" options={{ presentation: "modal", headerShown: false }} />
       <Stack.Screen name="content/[id]" options={{ headerShown: false }} />
       <Stack.Screen name="category/[id]" options={{ headerShown: false }} />
+      <Stack.Screen name="playlist" options={{ headerShown: false }} />
     </Stack>
   );
 }
