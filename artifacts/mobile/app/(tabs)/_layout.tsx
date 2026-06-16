@@ -1,6 +1,6 @@
 import { BlurView } from "expo-blur";
 import { isLiquidGlassAvailable } from "expo-glass-effect";
-import { Tabs, useRouter } from "expo-router";
+import { Tabs, router } from "expo-router";
 import { Icon, Label, NativeTabs } from "expo-router/unstable-native-tabs";
 import { SymbolView } from "expo-symbols";
 import { Ionicons } from "@expo/vector-icons";
@@ -13,9 +13,26 @@ import {
   View,
   useColorScheme,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useColors } from "@/hooks/useColors";
+
+// ── center + button — no hooks, uses module-level router singleton ──
+const AddButton = (props: object) => (
+  <TouchableOpacity
+    onPress={() => router.push("/add")}
+    style={styles.addWrap}
+    activeOpacity={0.85}
+  >
+    <LinearGradient
+      colors={["#818CF8", "#6366F1", "#4F46E5"]}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={styles.addGradient}
+    >
+      <Ionicons name="add" size={22} color="#FFFFFF" />
+    </LinearGradient>
+  </TouchableOpacity>
+);
 
 function NativeTabLayout() {
   return (
@@ -43,116 +60,95 @@ function NativeTabLayout() {
 function ClassicTabLayout() {
   const colors = useColors();
   const colorScheme = useColorScheme();
-  const insets = useSafeAreaInsets();
-  const router = useRouter();
   const isIOS = Platform.OS === "ios";
   const isWeb = Platform.OS === "web";
 
-  const BTN = 42; // button diameter — fits visually inside the tab bar
-  // Center the button vertically within the full tab bar area
-  const tabBarH = isWeb ? 84 : 49; // visual icon area, not counting safe inset
-  const safeBottom = isWeb ? 0 : insets.bottom || 0;
-  const btnBottom = safeBottom + Math.round((tabBarH - BTN) / 2);
-
   return (
-    <View style={styles.wrapper}>
-      <Tabs
-        screenOptions={{
-          tabBarActiveTintColor: colors.primary,
-          tabBarInactiveTintColor: colors.mutedForeground,
-          headerShown: false,
-          tabBarStyle: {
-            position: "absolute",
-            backgroundColor: isIOS ? "transparent" : colors.card,
-            borderTopWidth: 1,
-            borderTopColor: colors.border,
-            elevation: 0,
-            ...(isWeb ? { height: 84 } : {}),
-          },
-          tabBarBackground: () =>
+    <Tabs
+      screenOptions={{
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.mutedForeground,
+        headerShown: false,
+        tabBarStyle: {
+          position: "absolute",
+          backgroundColor: isIOS ? "transparent" : colors.card,
+          borderTopWidth: 1,
+          borderTopColor: colors.border,
+          elevation: 0,
+          ...(isWeb ? { height: 84 } : {}),
+        },
+        tabBarBackground: () =>
+          isIOS ? (
+            <BlurView
+              intensity={80}
+              tint={colorScheme === "dark" ? "dark" : "light"}
+              style={StyleSheet.absoluteFill}
+            />
+          ) : isWeb ? (
+            <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.card }]} />
+          ) : null,
+      }}
+    >
+      <Tabs.Screen
+        name="index"
+        options={{
+          title: "Library",
+          tabBarIcon: ({ color }) =>
             isIOS ? (
-              <BlurView
-                intensity={80}
-                tint={colorScheme === "dark" ? "dark" : "light"}
-                style={StyleSheet.absoluteFill}
-              />
-            ) : isWeb ? (
-              <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.card }]} />
-            ) : null,
+              <SymbolView name="books.vertical" tintColor={color} size={24} />
+            ) : (
+              <Ionicons name="library-outline" size={22} color={color} />
+            ),
         }}
-      >
-        <Tabs.Screen
-          name="index"
-          options={{
-            title: "Library",
-            tabBarIcon: ({ color }) =>
-              isIOS ? (
-                <SymbolView name="books.vertical" tintColor={color} size={24} />
-              ) : (
-                <Ionicons name="library-outline" size={22} color={color} />
-              ),
-          }}
-        />
-        <Tabs.Screen
-          name="search"
-          options={{
-            title: "Search",
-            tabBarIcon: ({ color }) =>
-              isIOS ? (
-                <SymbolView name="magnifyingglass" tintColor={color} size={24} />
-              ) : (
-                <Ionicons name="search-outline" size={22} color={color} />
-              ),
-          }}
-        />
-        <Tabs.Screen
-          name="insights"
-          options={{
-            title: "Insights",
-            tabBarIcon: ({ color }) =>
-              isIOS ? (
-                <SymbolView name="chart.bar.xaxis" tintColor={color} size={24} />
-              ) : (
-                <Ionicons name="bar-chart-outline" size={22} color={color} />
-              ),
-          }}
-        />
-        <Tabs.Screen
-          name="profile"
-          options={{
-            title: "Profile",
-            tabBarIcon: ({ color }) =>
-              isIOS ? (
-                <SymbolView name="person.circle" tintColor={color} size={24} />
-              ) : (
-                <Ionicons name="person-circle-outline" size={22} color={color} />
-              ),
-          }}
-        />
-        <Tabs.Screen
-          name="categories"
-          options={{ href: null }}
-        />
-      </Tabs>
-
-      {/* Center + button — sits inside the tab bar between Search & Insights */}
-      <View style={[styles.addRow, { bottom: btnBottom }]} pointerEvents="box-none">
-        <TouchableOpacity
-          style={[styles.addTouch, { width: BTN, height: BTN, borderRadius: BTN / 2 }]}
-          onPress={() => router.push("/add")}
-          activeOpacity={0.85}
-        >
-          <LinearGradient
-            colors={["#818CF8", "#6366F1", "#4F46E5"]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={[styles.addGradient, { borderRadius: BTN / 2 }]}
-          >
-            <Ionicons name="add" size={22} color="#FFFFFF" />
-          </LinearGradient>
-        </TouchableOpacity>
-      </View>
-    </View>
+      />
+      <Tabs.Screen
+        name="search"
+        options={{
+          title: "Search",
+          tabBarIcon: ({ color }) =>
+            isIOS ? (
+              <SymbolView name="magnifyingglass" tintColor={color} size={24} />
+            ) : (
+              <Ionicons name="search-outline" size={22} color={color} />
+            ),
+        }}
+      />
+      <Tabs.Screen
+        name="add"
+        options={{
+          title: "",
+          tabBarButton: AddButton,
+        }}
+      />
+      <Tabs.Screen
+        name="insights"
+        options={{
+          title: "Insights",
+          tabBarIcon: ({ color }) =>
+            isIOS ? (
+              <SymbolView name="chart.bar.xaxis" tintColor={color} size={24} />
+            ) : (
+              <Ionicons name="bar-chart-outline" size={22} color={color} />
+            ),
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: "Profile",
+          tabBarIcon: ({ color }) =>
+            isIOS ? (
+              <SymbolView name="person.circle" tintColor={color} size={24} />
+            ) : (
+              <Ionicons name="person-circle-outline" size={22} color={color} />
+            ),
+        }}
+      />
+      <Tabs.Screen
+        name="categories"
+        options={{ href: null }}
+      />
+    </Tabs>
   );
 }
 
@@ -164,26 +160,22 @@ export default function TabLayout() {
 }
 
 const styles = StyleSheet.create({
-  wrapper: {
+  addWrap: {
     flex: 1,
-  },
-  addRow: {
-    position: "absolute",
-    left: 0,
-    right: 0,
     alignItems: "center",
-    zIndex: 20,
+    justifyContent: "center",
+    paddingBottom: Platform.OS === "web" ? 10 : 0,
   },
-  addTouch: {
+  addGradient: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    alignItems: "center",
+    justifyContent: "center",
     shadowColor: "#6366F1",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.35,
     shadowRadius: 6,
     elevation: 6,
-  },
-  addGradient: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
   },
 });
