@@ -5,6 +5,7 @@ import React, { useState } from "react";
 import {
   FlatList,
   Platform,
+  Share,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -17,18 +18,88 @@ import { EmptyState } from "@/components/EmptyState";
 import { type Category, useLibrary } from "@/context/LibraryContext";
 import { useColors } from "@/hooks/useColors";
 
+function buildEncoded(data: object): string {
+  return btoa(unescape(encodeURIComponent(JSON.stringify(data))));
+}
+
+function getOrigin(): string {
+  if (Platform.OS === "web") return window.location.origin;
+  return `https://${process.env.EXPO_PUBLIC_DOMAIN ?? ""}`;
+}
+
+async function copyOrShare(url: string, title: string) {
+  if (Platform.OS === "web") {
+    if (navigator.clipboard) {
+      await navigator.clipboard.writeText(url);
+    } else {
+      const ta = document.createElement("textarea");
+      ta.value = url;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+    }
+  } else {
+    await Share.share({ message: `${title}\n${url}`, url, title });
+  }
+}
+
 export default function CategoriesScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { categories, items, deleteCategory } = useLibrary();
   const [catToDelete, setCatToDelete] = useState<Category | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null); // null | catId | "all"
 
   const topInset = Platform.OS === "web" ? 67 : insets.top;
 
+  function flashCopied(id: string) {
+    setCopiedId(id);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setTimeout(() => setCopiedId(null), 2500);
+  }
+
+  async function handleShareCat(cat: Category) {
+    const catItems = items.filter((it) => it.categoryId === cat.id && !it.isArchived);
+    if (catItems.length === 0) return;
+    const encoded = buildEncoded({
+      type: "cat",
+      n: cat.name,
+      i: cat.icon,
+      c: cat.color,
+      items: catItems.map((it) => ({ t: it.title, u: it.url })),
+    });
+    const url = `${getOrigin()}/playlist?d=${encoded}`;
+    try {
+      await copyOrShare(url, `${cat.name} Playlist — SkillSee`);
+      flashCopied(cat.id);
+    } catch { /* cancelled */ }
+  }
+
+  async function handleShareAll() {
+    const nonEmpty = categories
+      .map((cat) => ({
+        n: cat.name,
+        i: cat.icon,
+        c: cat.color,
+        items: items
+          .filter((it) => it.categoryId === cat.id && !it.isArchived)
+          .map((it) => ({ t: it.title, u: it.url })),
+      }))
+      .filter((c) => c.items.length > 0);
+    if (nonEmpty.length === 0) return;
+    const encoded = buildEncoded({ type: "lib", cats: nonEmpty });
+    const url = `${getOrigin()}/playlist?d=${encoded}`;
+    try {
+      await copyOrShare(url, "My SkillSee Library");
+      flashCopied("all");
+    } catch { /* cancelled */ }
+  }
+
   function handleDelete(cat: Category) {
     const others = categories.filter((c) => c.id !== cat.id);
-    if (others.length === 0) return; // can't delete last category
+    if (others.length === 0) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setCatToDelete(cat);
   }
@@ -59,6 +130,8 @@ export default function CategoriesScreen() {
     return actions;
   }
 
+  const totalItems = items.filter((it) => !it.isArchived).length;
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <FlatList
@@ -73,15 +146,40 @@ export default function CategoriesScreen() {
           },
         ]}
         ListHeaderComponent={
-          <View style={styles.header}>
-            <Text style={[styles.title, { color: colors.foreground }]}>Categories</Text>
-            <TouchableOpacity
-              style={[styles.addBtn, { backgroundColor: colors.primary }]}
-              onPress={() => router.push("/new-category")}
-              activeOpacity={0.8}
-            >
-              <Ionicons name="add" size={20} color="#FFFFFF" />
-            </TouchableOpacity>
+          <View>
+            <View style={styles.header}>
+              <Text style={[styles.title, { color: colors.foreground }]}>Categories</Text>
+              <View style={styles.headerActions}>
+                {totalItems > 0 && (
+                  <TouchableOpacity
+                    style={[styles.headerBtn, { backgroundColor: copiedId === "all" ? "#10B98122" : colors.secondary }]}
+                    onPress={handleShareAll}
+                    activeOpacity={0.8}
+                  >
+                    <Ionicons
+                      name={copiedId === "all" ? "checkmark" : "share-outline"}
+                      size={18}
+                      color={copiedId === "all" ? "#10B981" : colors.mutedForeground}
+                    />
+                  </TouchableOpacity>
+                )}
+                <TouchableOpacity
+                  style={[styles.addBtn, { backgroundColor: colors.primary }]}
+                  onPress={() => router.push("/new-category")}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="add" size={20} color="#FFFFFF" />
+                </TouchableOpacity>
+              </View>
+            </View>
+            {copiedId === "all" && (
+              <View style={[styles.toast, { backgroundColor: "#10B98122", borderColor: "#10B98144" }]}>
+                <Ionicons name="checkmark-circle" size={15} color="#10B981" />
+                <Text style={[styles.toastText, { color: "#10B981" }]}>
+                  Full library link copied — share it anywhere!
+                </Text>
+              </View>
+            )}
           </View>
         }
         ListEmptyComponent={
@@ -94,7 +192,8 @@ export default function CategoriesScreen() {
           />
         }
         renderItem={({ item: cat }) => {
-          const count = items.filter((it) => it.categoryId === cat.id).length;
+          const count = items.filter((it) => it.categoryId === cat.id && !it.isArchived).length;
+          const isCopied = copiedId === cat.id;
           return (
             <View style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <TouchableOpacity
@@ -113,6 +212,19 @@ export default function CategoriesScreen() {
                 </View>
               </TouchableOpacity>
               <View style={styles.rowActions}>
+                {count > 0 && (
+                  <TouchableOpacity
+                    onPress={() => handleShareCat(cat)}
+                    activeOpacity={0.6}
+                    style={[styles.actionBtn, isCopied && styles.actionBtnCopied]}
+                  >
+                    <Ionicons
+                      name={isCopied ? "checkmark" : "share-outline"}
+                      size={17}
+                      color={isCopied ? "#10B981" : colors.mutedForeground}
+                    />
+                  </TouchableOpacity>
+                )}
                 <TouchableOpacity
                   onPress={() => router.push(`/category/${cat.id}?edit=1`)}
                   activeOpacity={0.6}
@@ -158,12 +270,20 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 20,
+    marginBottom: 12,
   },
   title: {
     fontSize: 28,
     fontFamily: "Inter_700Bold",
     letterSpacing: -0.5,
+  },
+  headerActions: { flexDirection: "row", gap: 8, alignItems: "center" },
+  headerBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
   },
   addBtn: {
     width: 40,
@@ -172,6 +292,17 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  toast: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginBottom: 12,
+  },
+  toastText: { fontSize: 13, fontFamily: "Inter_500Medium", flex: 1 },
   row: {
     flexDirection: "row",
     alignItems: "center",
@@ -204,10 +335,9 @@ const styles = StyleSheet.create({
   rowActions: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
-    paddingRight: 14,
+    gap: 4,
+    paddingRight: 10,
   },
-  actionBtn: {
-    padding: 10,
-  },
+  actionBtn: { padding: 10 },
+  actionBtnCopied: { backgroundColor: "#10B98120", borderRadius: 8 },
 });

@@ -11,11 +11,30 @@ import {
   View,
 } from "react-native";
 
-interface PlaylistData {
-  n: string;
-  i: string;
-  c: string;
-  items: { t: string; u: string }[];
+interface PlaylistItem { t: string; u: string }
+interface CatBlock { n: string; i: string; c: string; items: PlaylistItem[] }
+
+type PlaylistData =
+  | { type: "cat"; n: string; i: string; c: string; items: PlaylistItem[] }
+  | { type: "lib"; cats: CatBlock[] };
+
+function ItemRow({ item, index, color }: { item: PlaylistItem; index: number; color: string }) {
+  return (
+    <TouchableOpacity
+      style={styles.item}
+      onPress={() => Linking.openURL(item.u)}
+      activeOpacity={0.72}
+    >
+      <View style={[styles.num, { backgroundColor: color + "20" }]}>
+        <Text style={[styles.numText, { color }]}>{index + 1}</Text>
+      </View>
+      <View style={styles.itemBody}>
+        <Text style={styles.itemTitle} numberOfLines={2}>{item.t}</Text>
+        <Text style={styles.itemUrl} numberOfLines={1}>{item.u}</Text>
+      </View>
+      <Ionicons name="open-outline" size={15} color="#555" />
+    </TouchableOpacity>
+  );
 }
 
 export default function PlaylistPage() {
@@ -25,7 +44,10 @@ export default function PlaylistPage() {
     const raw = Array.isArray(d) ? d[0] : d;
     if (!raw) return null;
     try {
-      return JSON.parse(decodeURIComponent(escape(atob(raw))));
+      const parsed = JSON.parse(decodeURIComponent(escape(atob(raw))));
+      // backward-compat: old format had no `type` field
+      if (!parsed.type && parsed.items) return { type: "cat", ...parsed };
+      return parsed as PlaylistData;
     } catch {
       return null;
     }
@@ -41,52 +63,68 @@ export default function PlaylistPage() {
     );
   }
 
-  const color = data.c ?? "#6366F1";
+  if (data.type === "cat") {
+    const color = data.c ?? "#6366F1";
+    return (
+      <ScrollView style={styles.page} contentContainerStyle={styles.pageContent}>
+        <LinearGradient colors={[color + "55", "#0A0A0F"]} style={styles.header}>
+          <View style={styles.appBadge}>
+            <Text style={styles.appBadgeText}>📚 SkillSee</Text>
+          </View>
+          <View style={[styles.iconWrap, { backgroundColor: color + "30" }]}>
+            <Ionicons name={(data.i as any) ?? "list-outline"} size={36} color={color} />
+          </View>
+          <Text style={styles.catName}>{data.n}</Text>
+          <Text style={styles.catCount}>
+            {data.items.length} {data.items.length === 1 ? "resource" : "resources"}
+          </Text>
+        </LinearGradient>
+        <View style={styles.listWrap}>
+          <Text style={styles.listLabel}>PLAYLIST</Text>
+          {data.items.map((item, i) => (
+            <ItemRow key={i} item={item} index={i} color={color} />
+          ))}
+        </View>
+        <Text style={styles.footer}>Made with SkillSee · Save. Learn. Master.</Text>
+      </ScrollView>
+    );
+  }
+
+  // type === "lib" — full library, grouped by category
+  const totalCount = data.cats.reduce((s, c) => s + c.items.length, 0);
+  const primaryColor = data.cats[0]?.c ?? "#6366F1";
 
   return (
     <ScrollView style={styles.page} contentContainerStyle={styles.pageContent}>
-      <LinearGradient
-        colors={[color + "55", "#0A0A0F"]}
-        style={styles.header}
-      >
+      <LinearGradient colors={[primaryColor + "44", "#0A0A0F"]} style={styles.header}>
         <View style={styles.appBadge}>
           <Text style={styles.appBadgeText}>📚 SkillSee</Text>
         </View>
-
-        <View style={[styles.iconWrap, { backgroundColor: color + "30" }]}>
-          <Ionicons name={(data.i as any) ?? "list-outline"} size={36} color={color} />
+        <View style={[styles.iconWrap, { backgroundColor: primaryColor + "30" }]}>
+          <Ionicons name="library-outline" size={36} color={primaryColor} />
         </View>
-        <Text style={styles.catName}>{data.n}</Text>
+        <Text style={styles.catName}>My Library</Text>
         <Text style={styles.catCount}>
-          {data.items.length} saved {data.items.length === 1 ? "resource" : "resources"}
+          {totalCount} {totalCount === 1 ? "resource" : "resources"} · {data.cats.length} {data.cats.length === 1 ? "category" : "categories"}
         </Text>
       </LinearGradient>
 
-      <View style={styles.listWrap}>
-        <Text style={styles.listLabel}>PLAYLIST</Text>
-        {data.items.map((item, i) => (
-          <TouchableOpacity
-            key={i}
-            style={styles.item}
-            onPress={() => Linking.openURL(item.u)}
-            activeOpacity={0.72}
-          >
-            <View style={[styles.num, { backgroundColor: color + "20" }]}>
-              <Text style={[styles.numText, { color }]}>{i + 1}</Text>
+      {data.cats.map((cat, ci) => (
+        <View key={ci} style={styles.catSection}>
+          <View style={styles.catSectionHeader}>
+            <View style={[styles.catSectionIcon, { backgroundColor: cat.c + "25" }]}>
+              <Ionicons name={(cat.i as any) ?? "folder-outline"} size={18} color={cat.c} />
             </View>
-            <View style={styles.itemBody}>
-              <Text style={styles.itemTitle} numberOfLines={2}>{item.t}</Text>
-              <Text style={styles.itemUrl} numberOfLines={1}>{item.u}</Text>
-            </View>
-            <Ionicons name="open-outline" size={16} color="#555" />
-          </TouchableOpacity>
-        ))}
-      </View>
+            <Text style={[styles.catSectionName, { color: cat.c }]}>{cat.n}</Text>
+            <Text style={styles.catSectionCount}>{cat.items.length} videos</Text>
+          </View>
+          {cat.items.map((item, i) => (
+            <ItemRow key={i} item={item} index={i} color={cat.c} />
+          ))}
+        </View>
+      ))}
 
-      <View style={styles.footer}>
-        <Text style={styles.footerText}>Save. Learn. Master.</Text>
-        <Text style={styles.footerSub}>Created with SkillSee</Text>
-      </View>
+      <Text style={styles.footer}>Made with SkillSee · Save. Learn. Master.</Text>
     </ScrollView>
   );
 }
@@ -136,7 +174,7 @@ const styles = StyleSheet.create({
   },
   catCount: { color: "#FFFFFFAA", fontSize: 14, fontWeight: "500" },
 
-  listWrap: { padding: 20, gap: 10 },
+  listWrap: { padding: 20, gap: 8 },
   listLabel: {
     color: "#555",
     fontSize: 11,
@@ -144,28 +182,44 @@ const styles = StyleSheet.create({
     letterSpacing: 1.2,
     marginBottom: 4,
   },
+
+  catSection: { paddingHorizontal: 20, paddingBottom: 8, gap: 8, marginTop: 20 },
+  catSectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 4,
+  },
+  catSectionIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  catSectionName: { fontSize: 15, fontWeight: "700", flex: 1 },
+  catSectionCount: { color: "#555", fontSize: 12 },
+
   item: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#FFFFFF0C",
-    borderRadius: 14,
-    padding: 14,
-    gap: 12,
+    borderRadius: 12,
+    padding: 12,
+    gap: 10,
   },
   num: {
-    width: 32,
-    height: 32,
-    borderRadius: 10,
+    width: 28,
+    height: 28,
+    borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
     flexShrink: 0,
   },
-  numText: { fontSize: 14, fontWeight: "700" },
+  numText: { fontSize: 12, fontWeight: "700" },
   itemBody: { flex: 1 },
-  itemTitle: { color: "#F0F0F0", fontSize: 14, fontWeight: "600", marginBottom: 3 },
-  itemUrl: { color: "#666", fontSize: 11 },
+  itemTitle: { color: "#F0F0F0", fontSize: 13, fontWeight: "600", marginBottom: 2 },
+  itemUrl: { color: "#555", fontSize: 11 },
 
-  footer: { alignItems: "center", marginTop: 32, gap: 4 },
-  footerText: { color: "#333", fontSize: 13, fontWeight: "600" },
-  footerSub: { color: "#2A2A2A", fontSize: 11 },
+  footer: { color: "#2A2A2A", fontSize: 11, textAlign: "center", marginTop: 32 },
 });
