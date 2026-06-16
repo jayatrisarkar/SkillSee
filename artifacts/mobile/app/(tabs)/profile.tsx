@@ -164,7 +164,7 @@ export default function ProfileScreen() {
     // On web, permissions are always granted via browser file picker
     if (Platform.OS !== "web") {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== "granted") return; // silently skip — no Alert on web
+      if (status !== "granted") return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: "images",
@@ -173,7 +173,24 @@ export default function ProfileScreen() {
       quality: 0.8,
     });
     if (!result.canceled && result.assets[0]) {
-      updateProfile({ avatarUri: result.assets[0].uri });
+      let uri = result.assets[0].uri;
+      // On web, blob: URLs are session-only — convert to base64 data URL so
+      // it survives page reloads when stored in AsyncStorage.
+      if (Platform.OS === "web" && uri.startsWith("blob:")) {
+        try {
+          const resp = await fetch(uri);
+          const blob = await resp.blob();
+          uri = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result as string);
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+          });
+        } catch {
+          // fall back to blob URI if conversion fails
+        }
+      }
+      updateProfile({ avatarUri: uri });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     }
   }
