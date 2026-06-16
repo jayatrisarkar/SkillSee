@@ -60,7 +60,7 @@ export function WelcomeModal() {
             <View style={styles.logoIcon}>
               <Text style={styles.logoEmoji}>📚</Text>
             </View>
-            <Text style={styles.logoName}>SkillFlow</Text>
+            <Text style={styles.logoName}>SkillSee</Text>
           </View>
           <Text style={styles.tagline}>Save. Learn. Master.</Text>
           <Text style={styles.heroSub}>Your personal learning vault</Text>

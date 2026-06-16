@@ -40,7 +40,7 @@ export async function scheduleDailyReminder(): Promise<void> {
   await Notifications.scheduleNotificationAsync({
     content: {
       title: "📚 Time to keep learning!",
-      body: "Your SkillFlow library is waiting. Keep your streak going!",
+      body: "Your SkillSee library is waiting. Keep your streak going!",
     },
     trigger: {
       type: Notifications.SchedulableTriggerInputTypes.DAILY,
@@ -57,7 +57,7 @@ export async function sendWeeklySummaryNotification(
   if (Platform.OS === "web") return;
   await Notifications.scheduleNotificationAsync({
     content: {
-      title: "🏆 Weekly SkillFlow Summary",
+      title: "🏆 Weekly SkillSee Summary",
       body: `This week: ${saved} saved, ${completed} completed. Great work!`,
     },
     trigger: null,

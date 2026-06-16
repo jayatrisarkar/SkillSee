@@ -133,7 +133,7 @@ export default function PrivacyScreen() {
           <View style={{ flex: 1, gap: 2 }}>
             <Text style={[styles.infoTitle, { color: colors.foreground }]}>Your data stays on your device</Text>
             <Text style={[styles.infoBody, { color: colors.mutedForeground }]}>
-              SkillFlow stores everything locally. Nothing is synced to a server or shared externally.
+              SkillSee stores everything locally. Nothing is synced to a server or shared externally.
             </Text>
           </View>
         </View>

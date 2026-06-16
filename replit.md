@@ -1,4 +1,4 @@
-# SkillFlow
+# SkillSee
 
 A premium mobile app for saving videos and links, AI auto-categorizing content, and tracking learning progress. Tagline: "Save. Learn. Master."
 
@@ -43,7 +43,7 @@ A premium mobile app for saving videos and links, AI auto-categorizing content, 
 ## User preferences
 
 - Branding: indigo/purple gradients, dark default
-- App name: SkillFlow
+- App name: SkillSee
 
 ## Gotchas
 

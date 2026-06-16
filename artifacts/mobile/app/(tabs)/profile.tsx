@@ -338,7 +338,7 @@ export default function ProfileScreen() {
       </View>
 
       <Text style={[styles.version, { color: colors.mutedForeground }]}>
-        SkillFlow v1.0 · Save. Learn. Master.
+        SkillSee v1.0 · Save. Learn. Master.
       </Text>
     </ScrollView>
   );
