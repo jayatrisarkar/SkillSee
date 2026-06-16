@@ -43,6 +43,8 @@ interface LibraryContextType {
   updateItem: (id: string, updates: Partial<Omit<ContentItem, "id" | "createdAt">>) => void;
   deleteItem: (id: string) => void;
   getItemsByCategory: (categoryId: string, includeArchived?: boolean) => ContentItem[];
+  clearAllItems: () => Promise<void>;
+  resetCategories: () => Promise<void>;
 }
 
 const CATEGORIES_KEY = "@library:categories";
@@ -191,6 +193,16 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
     [items]
   );
 
+  const clearAllItems = useCallback(async () => {
+    setItems([]);
+    await AsyncStorage.removeItem(ITEMS_KEY);
+  }, []);
+
+  const resetCategories = useCallback(async () => {
+    setCategories(DEFAULT_CATEGORIES);
+    await AsyncStorage.setItem(CATEGORIES_KEY, JSON.stringify(DEFAULT_CATEGORIES));
+  }, []);
+
   return (
     <LibraryContext.Provider
       value={{
@@ -204,6 +216,8 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
         updateItem,
         deleteItem,
         getItemsByCategory,
+        clearAllItems,
+        resetCategories,
       }}
     >
       {children}

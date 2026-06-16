@@ -307,14 +307,9 @@ export default function ProfileScreen() {
         </View>
         <SettingRow
           icon="lock-closed-outline"
-          label="Privacy Settings"
+          label="Privacy & Data"
           color="#64748B"
-          onPress={() =>
-            Alert.alert(
-              "Privacy",
-              "All your data is stored locally on your device. Nothing is shared externally."
-            )
-          }
+          onPress={() => router.push("/privacy")}
         />
         <SettingRow
           icon="settings-outline"
