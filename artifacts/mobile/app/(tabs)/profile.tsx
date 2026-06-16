@@ -124,10 +124,10 @@ export default function ProfileScreen() {
   const customCats = categories.filter((c) => !c.isDefault);
 
   async function pickAvatar() {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== "granted") {
-      Alert.alert("Permission needed", "Allow photo access to set a profile picture.");
-      return;
+    // On web, permissions are always granted via browser file picker
+    if (Platform.OS !== "web") {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== "granted") return; // silently skip — no Alert on web
     }
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: "images",
