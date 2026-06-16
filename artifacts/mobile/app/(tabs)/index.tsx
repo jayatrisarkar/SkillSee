@@ -79,7 +79,7 @@ export default function LibraryScreen() {
             </Text>
             <View style={styles.titleRow}>
               <Text style={[styles.titleBrand, { color: colors.primary }]}>Skill</Text>
-              <Text style={[styles.titleBrand, { color: colors.foreground }]}>Flow</Text>
+              <Text style={[styles.titleBrand, { color: colors.foreground }]}>See</Text>
             </View>
           </View>
           <TouchableOpacity
