@@ -182,7 +182,14 @@ export default function CategoryScreen() {
               <View style={[styles.catIconBig, { backgroundColor: category.color + "22" }]}>
                 <Ionicons name={category.icon as any} size={28} color={category.color} />
               </View>
-              <Text style={[styles.catTitle, { color: colors.foreground }]}>{category.name}</Text>
+              <Text
+                style={[styles.catTitle, { color: colors.foreground }]}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.7}
+              >
+                {category.name}
+              </Text>
               <View style={styles.catActions}>
                 <TouchableOpacity
                   onPress={handleSharePlaylist}
