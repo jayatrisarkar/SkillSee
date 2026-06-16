@@ -29,6 +29,22 @@ const STATUS_CONFIG = {
   completed: { label: "Completed", color: "#10B981", icon: "checkmark-circle-outline" },
 } as const;
 
+function formatSavedAt(ts: number): string {
+  const now = Date.now();
+  const diff = now - ts;
+  const mins = Math.floor(diff / 60000);
+  const hours = Math.floor(diff / 3600000);
+  const days = Math.floor(diff / 86400000);
+
+  if (mins < 1) return "Just now";
+  if (mins < 60) return `${mins}m ago`;
+  if (hours < 24) return `${hours}h ago`;
+  if (days < 7) return `${days}d ago`;
+
+  const d = new Date(ts);
+  return d.toLocaleDateString(undefined, { month: "short", day: "numeric", year: d.getFullYear() !== new Date().getFullYear() ? "numeric" : undefined });
+}
+
 function extractDomain(url: string): string {
   try {
     const match = url.match(/(?:https?:\/\/)?(?:www\.)?([^\/\s?#]+)/);
@@ -113,9 +129,14 @@ export function ContentCard({
           </TouchableOpacity>
         </View>
 
-        <Text style={[styles.domain, { color: colors.mutedForeground }]} numberOfLines={1}>
-          {extractDomain(item.url)}
-        </Text>
+        <View style={styles.metaRow}>
+          <Text style={[styles.domain, { color: colors.mutedForeground }]} numberOfLines={1}>
+            {extractDomain(item.url)}
+          </Text>
+          <Text style={[styles.savedAt, { color: colors.mutedForeground }]}>
+            · {formatSavedAt(item.createdAt)}
+          </Text>
+        </View>
 
         {(item.description || item.notes) ? (
           <Text style={[styles.description, { color: colors.mutedForeground }]} numberOfLines={2}>
@@ -198,7 +219,17 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_600SemiBold",
     lineHeight: 21,
   },
+  metaRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    flexWrap: "wrap",
+    gap: 2,
+  },
   domain: {
+    fontSize: 12,
+    fontFamily: "Inter_400Regular",
+  },
+  savedAt: {
     fontSize: 12,
     fontFamily: "Inter_400Regular",
   },
