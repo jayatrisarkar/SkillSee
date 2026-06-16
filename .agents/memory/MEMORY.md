@@ -1,3 +1,2 @@
-- [Expo app stack](expo-app-stack.md) — Content Library mobile app: Expo SDK 54, expo-router, AsyncStorage, SVG charts, local-only storage (no backend).
-- [Hidden tabs pattern](hidden-tabs.md) — Use `href: null` in Tabs.Screen options to keep a route accessible via push() but hidden from the tab bar.
-- [expo-router tabBarButton hook crash](expo-router-tabbar-hook.md) — module-level `router` singleton (not useRouter) is the only safe way to navigate from tabBarButton in expo-router v6.
+- [ErrorBoundary must be inside ThemeProvider](error-boundary-theme.md) — wrapping ThemeProvider with ErrorBoundary causes blank white screen when fallback tries to call useColors().
+- [Clerk hook in context provider crashes](clerk-hook-bridge.md) — useAuth() called inside a React context provider can crash after Clerk initializes; use the module-level ClerkBridge pattern instead.

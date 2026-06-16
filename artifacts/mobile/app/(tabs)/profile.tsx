@@ -1,9 +1,11 @@
 import { Ionicons } from "@expo/vector-icons";
+import { useAuth, useUser } from "@clerk/clerk-expo";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
 import React, { useEffect, useMemo, useState } from "react";
 import {
+  ActivityIndicator,
   Image,
   Platform,
   ScrollView,
@@ -89,8 +91,10 @@ export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { profile, updateProfile } = useProfile();
-  const { items, categories } = useLibrary();
+  const { items, categories, isSyncing, syncNow } = useLibrary();
   const { themeMode, setThemeMode } = useTheme();
+  const { isSignedIn, signOut } = useAuth();
+  const { user } = useUser();
 
   const topInset = Platform.OS === "web" ? 67 : insets.top;
 
@@ -131,8 +135,8 @@ export default function ProfileScreen() {
         title: it.title,
         url: it.url,
         categoryId: it.categoryId,
-        completed: it.completed,
-        savedAt: it.savedAt,
+        completed: it.status === "completed",
+        savedAt: new Date(it.createdAt).toISOString(),
         notes: it.notes ?? "",
       })),
     };
@@ -344,13 +348,53 @@ export default function ProfileScreen() {
         />
       </View>
 
+      {/* Cloud Sync / Auth */}
       <View style={[styles.settingsGroup, { backgroundColor: colors.card, borderColor: colors.border }]}>
-        <SettingRow
-          icon="log-out-outline"
-          label="Log Out"
-          destructive
-          onPress={() => setShowLogout(true)}
-        />
+        {isSignedIn ? (
+          <>
+            <View style={[styles.settingRow, { borderBottomColor: colors.border }]}>
+              <View style={[styles.settingIconWrap, { backgroundColor: "#10B98122" }]}>
+                <Ionicons name="cloud-done-outline" size={18} color="#10B981" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.settingLabel, { color: colors.foreground }]}>Cloud Sync</Text>
+                <Text style={[{ fontSize: 12, color: colors.mutedForeground }]}>
+                  {user?.primaryEmailAddress?.emailAddress ?? "Signed in"}
+                </Text>
+              </View>
+              {isSyncing ? (
+                <ActivityIndicator size="small" color={colors.primary} />
+              ) : (
+                <TouchableOpacity onPress={syncNow} style={{ padding: 4 }}>
+                  <Ionicons name="refresh-outline" size={18} color={colors.primary} />
+                </TouchableOpacity>
+              )}
+            </View>
+            <SettingRow
+              icon="log-out-outline"
+              label="Log Out"
+              destructive
+              onPress={() => setShowLogout(true)}
+            />
+          </>
+        ) : (
+          <TouchableOpacity
+            style={[styles.settingRow, { borderBottomColor: "transparent" }]}
+            onPress={() => router.push("/sign-in")}
+            activeOpacity={0.7}
+          >
+            <View style={[styles.settingIconWrap, { backgroundColor: "#6366F122" }]}>
+              <Ionicons name="cloud-outline" size={18} color="#6366F1" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.settingLabel, { color: "#6366F1" }]}>Sign In to Sync</Text>
+              <Text style={[{ fontSize: 12, color: colors.mutedForeground }]}>
+                Back up your library across devices
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
+          </TouchableOpacity>
+        )}
       </View>
 
       <Text style={[styles.version, { color: colors.mutedForeground }]}>
@@ -360,10 +404,17 @@ export default function ProfileScreen() {
     <ConfirmModal
       visible={showLogout}
       title="Log Out"
-      message="Your data is stored locally and won't be deleted."
+      message="Your saved library will remain on this device. You can sign back in anytime to re-sync."
       actions={[
         { label: "Cancel", onPress: () => setShowLogout(false) },
-        { label: "Log Out", destructive: true, onPress: () => setShowLogout(false) },
+        {
+          label: "Log Out",
+          destructive: true,
+          onPress: async () => {
+            setShowLogout(false);
+            await signOut();
+          },
+        },
       ]}
       onDismiss={() => setShowLogout(false)}
     />

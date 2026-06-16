@@ -5,6 +5,9 @@ import {
   Inter_700Bold,
   useFonts,
 } from "@expo-google-fonts/inter";
+import { ClerkProvider } from "@clerk/clerk-expo";
+import * as SecureStore from "expo-secure-store";
+import { Platform } from "react-native";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
@@ -17,15 +20,46 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { LibraryProvider } from "@/context/LibraryContext";
 import { ProfileProvider } from "@/context/ProfileContext";
+import { ClerkBridge } from "@/context/AuthContext";
 
 SplashScreen.preventAutoHideAsync();
 
 const queryClient = new QueryClient();
 
+// SecureStore token cache for Clerk — web falls back to an in-memory store
+// because expo-secure-store is not available in browsers.
+const memCache: Record<string, string> = {};
+const tokenCache = {
+  async getToken(key: string) {
+    if (Platform.OS === "web") return memCache[key] ?? null;
+    try {
+      return await SecureStore.getItemAsync(key);
+    } catch {
+      return null;
+    }
+  },
+  async saveToken(key: string, value: string) {
+    if (Platform.OS === "web") { memCache[key] = value; return; }
+    try {
+      await SecureStore.setItemAsync(key, value);
+    } catch {}
+  },
+  async clearToken(key: string) {
+    if (Platform.OS === "web") { delete memCache[key]; return; }
+    try {
+      await SecureStore.deleteItemAsync(key);
+    } catch {}
+  },
+};
+
+const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY ?? "";
+
 function RootLayoutNav() {
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      <Stack.Screen name="sign-in" options={{ headerShown: false }} />
+      <Stack.Screen name="sign-up" options={{ headerShown: false }} />
       <Stack.Screen name="add" options={{ presentation: "modal", headerShown: false }} />
       <Stack.Screen name="new-category" options={{ presentation: "modal", headerShown: false }} />
       <Stack.Screen name="edit-profile" options={{ presentation: "modal", headerShown: false }} />
@@ -54,22 +88,25 @@ export default function RootLayout() {
   if (!fontsLoaded && !fontError) return null;
 
   return (
-    <SafeAreaProvider>
-      <ErrorBoundary>
+    <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache}>
+      <SafeAreaProvider>
         <ThemeProvider>
-          <QueryClientProvider client={queryClient}>
-            <GestureHandlerRootView style={{ flex: 1 }}>
-              <KeyboardProvider>
-                <ProfileProvider>
-                  <LibraryProvider>
-                    <RootLayoutNav />
-                  </LibraryProvider>
-                </ProfileProvider>
-              </KeyboardProvider>
-            </GestureHandlerRootView>
-          </QueryClientProvider>
+          <ErrorBoundary>
+            <QueryClientProvider client={queryClient}>
+              <GestureHandlerRootView style={{ flex: 1 }}>
+                <ClerkBridge />
+                <KeyboardProvider>
+                  <ProfileProvider>
+                    <LibraryProvider>
+                      <RootLayoutNav />
+                    </LibraryProvider>
+                  </ProfileProvider>
+                </KeyboardProvider>
+              </GestureHandlerRootView>
+            </QueryClientProvider>
+          </ErrorBoundary>
         </ThemeProvider>
-      </ErrorBoundary>
-    </SafeAreaProvider>
+      </SafeAreaProvider>
+    </ClerkProvider>
   );
 }

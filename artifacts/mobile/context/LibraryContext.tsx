@@ -4,8 +4,10 @@ import React, {
   useCallback,
   useContext,
   useEffect,
+  useRef,
   useState,
 } from "react";
+import { getApiHeaders, isUserSignedIn, onAuthStateChange } from "./clerkBridge";
 
 export type ContentStatus = "none" | "learning" | "completed";
 
@@ -36,6 +38,7 @@ interface LibraryContextType {
   categories: Category[];
   items: ContentItem[];
   isLoaded: boolean;
+  isSyncing: boolean;
   addCategory: (name: string, icon: string, color: string) => Category;
   updateCategory: (id: string, updates: Partial<Omit<Category, "id" | "isDefault">>) => void;
   deleteCategory: (id: string, moveToId: string | null) => void;
@@ -45,6 +48,7 @@ interface LibraryContextType {
   getItemsByCategory: (categoryId: string, includeArchived?: boolean) => ContentItem[];
   clearAllItems: () => Promise<void>;
   resetCategories: () => Promise<void>;
+  syncNow: () => Promise<void>;
 }
 
 const CATEGORIES_KEY = "@library:categories";
@@ -66,12 +70,161 @@ const DEFAULT_CATEGORIES: Category[] = [
   { id: "cat_learning", name: "Learning", icon: "book-outline", color: "#3B82F6", isDefault: true },
 ];
 
+// ─── API helpers ─────────────────────────────────────────────────────────────
+
+function getApiBase(): string {
+  const domain = process.env.EXPO_PUBLIC_DOMAIN ?? "";
+  return domain ? `https://${domain}/api/library` : "/api/library";
+}
+
+function localItemToApi(item: ContentItem, idx: number) {
+  return {
+    id: item.id,
+    categoryId: item.categoryId,
+    title: item.title,
+    url: item.url,
+    notes: item.notes,
+    platform: "other",
+    thumbnail: item.thumbnailUrl,
+    completed: item.status === "completed",
+    position: idx,
+  };
+}
+
+function localCategoryToApi(cat: Category) {
+  return {
+    id: cat.id,
+    name: cat.name,
+    icon: cat.icon,
+    color: cat.color,
+    isDefault: cat.isDefault,
+  };
+}
+
+function apiItemToLocal(row: any): ContentItem {
+  return {
+    id: row.id,
+    title: row.title,
+    url: row.url,
+    notes: row.notes ?? "",
+    categoryId: row.categoryId,
+    tags: [],
+    status: row.completed ? "completed" : "none",
+    isArchived: false,
+    createdAt: row.savedAt ? new Date(row.savedAt).getTime() : Date.now(),
+    updatedAt: Date.now(),
+    thumbnailUrl: row.thumbnail ?? undefined,
+  };
+}
+
+function apiCategoryToLocal(row: any): Category {
+  return {
+    id: row.id,
+    name: row.name,
+    icon: row.icon,
+    color: row.color,
+    isDefault: row.isDefault ?? false,
+  };
+}
+
 const LibraryContext = createContext<LibraryContextType | null>(null);
 
 export function LibraryProvider({ children }: { children: React.ReactNode }) {
   const [categories, setCategories] = useState<Category[]>(DEFAULT_CATEGORIES);
   const [items, setItems] = useState<ContentItem[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [isSignedIn, setIsSignedIn] = useState(isUserSignedIn);
+  const prevSignedIn = useRef<boolean | null>(null);
+
+  useEffect(() => onAuthStateChange(setIsSignedIn), []);
+
+  // ── Local persistence ─────────────────────────────────────────────────────
+
+  const saveCategories = useCallback(async (cats: Category[]) => {
+    await AsyncStorage.setItem(CATEGORIES_KEY, JSON.stringify(cats));
+  }, []);
+
+  const saveItems = useCallback(async (its: ContentItem[]) => {
+    await AsyncStorage.setItem(ITEMS_KEY, JSON.stringify(its));
+  }, []);
+
+  // ── Cloud sync ────────────────────────────────────────────────────────────
+
+  const syncNow = useCallback(async () => {
+    if (!isSignedIn) return;
+    const headers = await getApiHeaders();
+    if (!headers.Authorization) return;
+    setIsSyncing(true);
+    try {
+      const res = await fetch(`${getApiBase()}/sync`, { headers });
+      if (!res.ok) return;
+      const { categories: cloudCats, items: cloudItems } = await res.json();
+      const localCats = (await AsyncStorage.getItem(CATEGORIES_KEY));
+      const localItemsRaw = (await AsyncStorage.getItem(ITEMS_KEY));
+
+      const localCatsArr: Category[] = localCats ? JSON.parse(localCats) : DEFAULT_CATEGORIES;
+      const localItemsArr: ContentItem[] = localItemsRaw ? JSON.parse(localItemsRaw) : [];
+
+      if (cloudCats.length === 0 && cloudItems.length === 0 && (localCatsArr.length > 0 || localItemsArr.length > 0)) {
+        // First sign-in — push local data to cloud
+        await fetch(`${getApiBase()}/sync`, {
+          method: "POST",
+          headers,
+          body: JSON.stringify({
+            categories: localCatsArr.map(localCategoryToApi),
+            items: localItemsArr.map(localItemToApi),
+          }),
+        });
+      } else if (cloudCats.length > 0 || cloudItems.length > 0) {
+        // Cloud has data — use it as source of truth
+        const mergedCats = cloudCats.map(apiCategoryToLocal);
+        const mergedItems = cloudItems.map(apiItemToLocal);
+        setCategories(mergedCats);
+        setItems(mergedItems);
+        await saveCategories(mergedCats);
+        await saveItems(mergedItems);
+      }
+    } catch {}
+    setIsSyncing(false);
+  }, [isSignedIn, getApiHeaders, saveCategories, saveItems]);
+
+  // Fire-and-forget: push a single mutation to the cloud
+  const pushCategoryUpdate = useCallback(async (cat: Category, method: "POST" | "DELETE") => {
+    if (!isSignedIn) return;
+    try {
+      const headers = await getApiHeaders();
+      if (!headers.Authorization) return;
+      if (method === "DELETE") {
+        await fetch(`${getApiBase()}/categories/${cat.id}`, { method: "DELETE", headers });
+      } else {
+        await fetch(`${getApiBase()}/categories`, {
+          method: "POST",
+          headers,
+          body: JSON.stringify(localCategoryToApi(cat)),
+        });
+      }
+    } catch {}
+  }, [isSignedIn, getApiHeaders]);
+
+  const pushItemMutation = useCallback(async (item: ContentItem, method: "POST" | "DELETE", idx = 0) => {
+    if (!isSignedIn) return;
+    try {
+      const headers = await getApiHeaders();
+      if (!headers.Authorization) return;
+      if (method === "DELETE") {
+        await fetch(`${getApiBase()}/items/${item.id}`, { method: "DELETE", headers });
+      } else {
+        await fetch(`${getApiBase()}/items`, {
+          method: "POST",
+          headers,
+          body: JSON.stringify(localItemToApi(item, idx)),
+        });
+      }
+    } catch {}
+  }, [isSignedIn, getApiHeaders]);
+
+  // ── Initial load ──────────────────────────────────────────────────────────
 
   useEffect(() => {
     async function load() {
@@ -88,13 +241,17 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
     load();
   }, []);
 
-  const saveCategories = useCallback(async (cats: Category[]) => {
-    await AsyncStorage.setItem(CATEGORIES_KEY, JSON.stringify(cats));
-  }, []);
+  // ── Sync when sign-in state changes ───────────────────────────────────────
 
-  const saveItems = useCallback(async (its: ContentItem[]) => {
-    await AsyncStorage.setItem(ITEMS_KEY, JSON.stringify(its));
-  }, []);
+  useEffect(() => {
+    if (!isLoaded) return;
+    if (isSignedIn && prevSignedIn.current !== true) {
+      syncNow();
+    }
+    prevSignedIn.current = isSignedIn;
+  }, [isSignedIn, isLoaded, syncNow]);
+
+  // ── Mutations ─────────────────────────────────────────────────────────────
 
   const addCategory = useCallback(
     (name: string, icon: string, color: string): Category => {
@@ -104,9 +261,10 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
         saveCategories(next);
         return next;
       });
+      pushCategoryUpdate(cat, "POST");
       return cat;
     },
-    [saveCategories]
+    [saveCategories, pushCategoryUpdate]
   );
 
   const updateCategory = useCallback(
@@ -114,15 +272,19 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
       setCategories((prev) => {
         const next = prev.map((c) => (c.id === id ? { ...c, ...updates } : c));
         saveCategories(next);
+        const updated = next.find((c) => c.id === id);
+        if (updated) pushCategoryUpdate(updated, "POST");
         return next;
       });
     },
-    [saveCategories]
+    [saveCategories, pushCategoryUpdate]
   );
 
   const deleteCategory = useCallback(
     (id: string, moveToId: string | null) => {
       setCategories((prev) => {
+        const cat = prev.find((c) => c.id === id);
+        if (cat) pushCategoryUpdate(cat, "DELETE");
         const next = prev.filter((c) => c.id !== id);
         saveCategories(next);
         return next;
@@ -140,7 +302,7 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
         return next;
       });
     },
-    [saveCategories, saveItems]
+    [saveCategories, saveItems, pushCategoryUpdate]
   );
 
   const addItem = useCallback(
@@ -154,11 +316,12 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
       setItems((prev) => {
         const next = [item, ...prev];
         saveItems(next);
+        pushItemMutation(item, "POST", 0);
         return next;
       });
       return item;
     },
-    [saveItems]
+    [saveItems, pushItemMutation]
   );
 
   const updateItem = useCallback(
@@ -168,21 +331,25 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
           it.id === id ? { ...it, ...updates, updatedAt: Date.now() } : it
         );
         saveItems(next);
+        const updated = next.find((it) => it.id === id);
+        if (updated) pushItemMutation(updated, "POST", next.indexOf(updated));
         return next;
       });
     },
-    [saveItems]
+    [saveItems, pushItemMutation]
   );
 
   const deleteItem = useCallback(
     (id: string) => {
       setItems((prev) => {
+        const item = prev.find((it) => it.id === id);
+        if (item) pushItemMutation(item, "DELETE");
         const next = prev.filter((it) => it.id !== id);
         saveItems(next);
         return next;
       });
     },
-    [saveItems]
+    [saveItems, pushItemMutation]
   );
 
   const getItemsByCategory = useCallback(
@@ -209,6 +376,7 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
         categories,
         items,
         isLoaded,
+        isSyncing,
         addCategory,
         updateCategory,
         deleteCategory,
@@ -218,6 +386,7 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
         getItemsByCategory,
         clearAllItems,
         resetCategories,
+        syncNow,
       }}
     >
       {children}
