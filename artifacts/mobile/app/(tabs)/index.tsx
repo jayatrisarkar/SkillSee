@@ -75,7 +75,7 @@ export default function LibraryScreen() {
         <View style={styles.headerRow}>
           <View style={styles.greetingBlock}>
             <Text style={[styles.greeting, { color: colors.mutedForeground }]}>
-              {getGreeting()}, {firstName} 👋
+              {getGreeting()}, {firstName}
             </Text>
             <View style={styles.titleRow}>
               <Text style={[styles.titleBrand, { color: colors.primary }]}>Skill</Text>
