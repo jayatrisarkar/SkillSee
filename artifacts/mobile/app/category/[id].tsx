@@ -6,6 +6,7 @@ import {
   FlatList,
   Platform,
   ScrollView,
+  Share,
   StyleSheet,
   Text,
   TextInput,
@@ -38,8 +39,49 @@ export default function CategoryScreen() {
   const [sort, setSort] = useState<SortOption>("newest");
   const [showArchived, setShowArchived] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<ContentItem | null>(null);
+  const [shareCopied, setShareCopied] = useState(false);
 
   const topInset = Platform.OS === "web" ? 67 : insets.top;
+
+  async function handleSharePlaylist() {
+    if (!category) return;
+    const allItems = items.filter((it) => it.categoryId === category.id && !it.isArchived);
+    if (allItems.length === 0) return;
+
+    const icon = category.icon?.includes("music") ? "🎵"
+      : category.icon?.includes("book") ? "📚"
+      : category.icon?.includes("fitness") ? "💪"
+      : category.icon?.includes("code") ? "💻"
+      : category.icon?.includes("brush") ? "🎨"
+      : "📋";
+
+    const lines = allItems.map((it, i) => `${i + 1}. ${it.title}\n   ${it.url}`);
+    const text = `${icon} ${category.name} Playlist — SkillSee\n${allItems.length} saved ${allItems.length === 1 ? "video" : "videos"}\n\n${lines.join("\n\n")}\n\n— Shared from SkillSee`;
+
+    try {
+      if (Platform.OS === "web") {
+        if (navigator.clipboard) {
+          await navigator.clipboard.writeText(text);
+        } else {
+          // fallback: create a temporary textarea
+          const ta = document.createElement("textarea");
+          ta.value = text;
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand("copy");
+          document.body.removeChild(ta);
+        }
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        setShareCopied(true);
+        setTimeout(() => setShareCopied(false), 2500);
+      } else {
+        await Share.share({ message: text, title: `${category.name} Playlist` });
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      }
+    } catch {
+      // share cancelled or failed — no-op
+    }
+  }
 
   const categoryItems = useMemo(() => {
     if (!category) return [];
@@ -133,6 +175,17 @@ export default function CategoryScreen() {
               </View>
               <Text style={[styles.catTitle, { color: colors.foreground }]}>{category.name}</Text>
               <View style={styles.catActions}>
+                <TouchableOpacity
+                  onPress={handleSharePlaylist}
+                  style={[styles.catActionBtn, { backgroundColor: shareCopied ? "#10B98122" : colors.secondary }]}
+                  disabled={categoryItems.length === 0}
+                >
+                  <Ionicons
+                    name={shareCopied ? "checkmark" : "share-outline"}
+                    size={18}
+                    color={shareCopied ? "#10B981" : colors.mutedForeground}
+                  />
+                </TouchableOpacity>
                 <TouchableOpacity
                   onPress={() => setIsEditing(true)}
                   style={[styles.catActionBtn, { backgroundColor: colors.secondary }]}
