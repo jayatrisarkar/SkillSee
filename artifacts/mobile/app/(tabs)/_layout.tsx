@@ -48,9 +48,11 @@ function ClassicTabLayout() {
   const isIOS = Platform.OS === "ios";
   const isWeb = Platform.OS === "web";
 
-  // Center the button in the tab bar
-  const tabBarHeight = isWeb ? 84 : 49 + (insets.bottom || 0);
-  const btnBottom = Math.round(tabBarHeight / 2) - 23; // 23 = half button height
+  const BTN = 42; // button diameter — fits visually inside the tab bar
+  // Center the button vertically within the full tab bar area
+  const tabBarH = isWeb ? 84 : 49; // visual icon area, not counting safe inset
+  const safeBottom = isWeb ? 0 : insets.bottom || 0;
+  const btnBottom = safeBottom + Math.round((tabBarH - BTN) / 2);
 
   return (
     <View style={styles.wrapper}>
@@ -133,21 +135,23 @@ function ClassicTabLayout() {
         />
       </Tabs>
 
-      {/* Center + button floating over the tab bar */}
-      <TouchableOpacity
-        style={[styles.addBtn, { bottom: btnBottom }]}
-        onPress={() => router.push("/add")}
-        activeOpacity={0.85}
-      >
-        <LinearGradient
-          colors={["#818CF8", "#6366F1", "#4F46E5"]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.addGradient}
+      {/* Center + button — sits inside the tab bar between Search & Insights */}
+      <View style={[styles.addRow, { bottom: btnBottom }]} pointerEvents="box-none">
+        <TouchableOpacity
+          style={[styles.addTouch, { width: BTN, height: BTN, borderRadius: BTN / 2 }]}
+          onPress={() => router.push("/add")}
+          activeOpacity={0.85}
         >
-          <Ionicons name="add" size={24} color="#FFFFFF" />
-        </LinearGradient>
-      </TouchableOpacity>
+          <LinearGradient
+            colors={["#818CF8", "#6366F1", "#4F46E5"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={[styles.addGradient, { borderRadius: BTN / 2 }]}
+          >
+            <Ionicons name="add" size={22} color="#FFFFFF" />
+          </LinearGradient>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
@@ -163,21 +167,22 @@ const styles = StyleSheet.create({
   wrapper: {
     flex: 1,
   },
-  addBtn: {
+  addRow: {
     position: "absolute",
-    left: "50%" as any,
-    marginLeft: -23,
-    zIndex: 10,
+    left: 0,
+    right: 0,
+    alignItems: "center",
+    zIndex: 20,
+  },
+  addTouch: {
     shadowColor: "#6366F1",
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.4,
-    shadowRadius: 8,
-    elevation: 8,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.35,
+    shadowRadius: 6,
+    elevation: 6,
   },
   addGradient: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
+    flex: 1,
     alignItems: "center",
     justifyContent: "center",
   },
