@@ -15,13 +15,16 @@ Notifications.setNotificationHandler({
 });
 
 export async function getNotificationsEnabled(): Promise<boolean> {
-  if (Platform.OS === "web") return false;
   const val = await AsyncStorage.getItem(NOTIF_ENABLED_KEY);
   return val === "1";
 }
 
 export async function requestAndEnableNotifications(): Promise<boolean> {
-  if (Platform.OS === "web") return false;
+  if (Platform.OS === "web") {
+    // Web doesn't support push notifications — save preference only
+    await AsyncStorage.setItem(NOTIF_ENABLED_KEY, "1");
+    return true;
+  }
   const { status } = await Notifications.requestPermissionsAsync();
   if (status !== "granted") return false;
   await AsyncStorage.setItem(NOTIF_ENABLED_KEY, "1");
@@ -31,7 +34,9 @@ export async function requestAndEnableNotifications(): Promise<boolean> {
 
 export async function disableNotifications(): Promise<void> {
   await AsyncStorage.setItem(NOTIF_ENABLED_KEY, "0");
-  await Notifications.cancelAllScheduledNotificationsAsync();
+  if (Platform.OS !== "web") {
+    await Notifications.cancelAllScheduledNotificationsAsync();
+  }
 }
 
 export async function scheduleDailyReminder(): Promise<void> {
