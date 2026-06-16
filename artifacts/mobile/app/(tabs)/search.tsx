@@ -1,3 +1,4 @@
+import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import React, { useMemo, useState } from "react";
 import {
@@ -37,6 +38,12 @@ export default function SearchScreen() {
   const [activeCatId, setActiveCatId] = useState<string | null>(null);
 
   const topInset = Platform.OS === "web" ? 67 : insets.top;
+  const isSearching = query.trim().length > 0 || activeCatId !== null;
+
+  const recentItems = useMemo(
+    () => items.filter((it) => !it.isArchived).slice(0, 8),
+    [items]
+  );
 
   const filtered = useMemo(() => {
     let result = items.filter((it) => !it.isArchived);
@@ -79,106 +86,149 @@ export default function SearchScreen() {
           placeholder="Search videos, links, notes..."
         />
 
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.filterRow}
-          contentContainerStyle={styles.filterContent}
-        >
-          {SORT_OPTIONS.map((opt) => (
-            <TouchableOpacity
-              key={opt.key}
-              style={[
-                styles.chip,
-                {
-                  backgroundColor: sort === opt.key ? colors.primary : colors.secondary,
-                },
-              ]}
-              onPress={() => setSort(opt.key)}
-            >
-              <Text
-                style={[
-                  styles.chipText,
-                  { color: sort === opt.key ? "#FFFFFF" : colors.mutedForeground },
-                ]}
-              >
-                {opt.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
-
-          <View style={[styles.separator, { backgroundColor: colors.border }]} />
-
-          <TouchableOpacity
-            style={[
-              styles.chip,
-              { backgroundColor: activeCatId === null ? colors.secondary : colors.primary },
-            ]}
-            onPress={() => setActiveCatId(null)}
+        {isSearching && (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.filterRow}
+            contentContainerStyle={styles.filterContent}
           >
-            <Text style={[styles.chipText, { color: activeCatId === null ? colors.mutedForeground : "#FFFFFF" }]}>
-              All
-            </Text>
-          </TouchableOpacity>
-          {categories.map((cat) => (
+            {SORT_OPTIONS.map((opt) => (
+              <TouchableOpacity
+                key={opt.key}
+                style={[
+                  styles.chip,
+                  {
+                    backgroundColor: sort === opt.key ? colors.primary : colors.secondary,
+                  },
+                ]}
+                onPress={() => setSort(opt.key)}
+              >
+                <Text
+                  style={[
+                    styles.chipText,
+                    { color: sort === opt.key ? "#FFFFFF" : colors.mutedForeground },
+                  ]}
+                >
+                  {opt.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+
+            <View style={[styles.separator, { backgroundColor: colors.border }]} />
+
             <TouchableOpacity
-              key={cat.id}
               style={[
                 styles.chip,
-                {
-                  backgroundColor: activeCatId === cat.id ? cat.color + "33" : colors.secondary,
-                  borderWidth: activeCatId === cat.id ? 1 : 0,
-                  borderColor: cat.color,
-                },
+                { backgroundColor: activeCatId === null ? colors.secondary : colors.primary },
               ]}
-              onPress={() => setActiveCatId(activeCatId === cat.id ? null : cat.id)}
+              onPress={() => setActiveCatId(null)}
             >
-              <Text
-                style={[
-                  styles.chipText,
-                  { color: activeCatId === cat.id ? cat.color : colors.mutedForeground },
-                ]}
-              >
-                {cat.name}
+              <Text style={[styles.chipText, { color: activeCatId === null ? colors.mutedForeground : "#FFFFFF" }]}>
+                All
               </Text>
             </TouchableOpacity>
-          ))}
-        </ScrollView>
+            {categories.map((cat) => (
+              <TouchableOpacity
+                key={cat.id}
+                style={[
+                  styles.chip,
+                  {
+                    backgroundColor: activeCatId === cat.id ? cat.color + "33" : colors.secondary,
+                    borderWidth: activeCatId === cat.id ? 1 : 0,
+                    borderColor: cat.color,
+                  },
+                ]}
+                onPress={() => setActiveCatId(activeCatId === cat.id ? null : cat.id)}
+              >
+                <Text
+                  style={[
+                    styles.chipText,
+                    { color: activeCatId === cat.id ? cat.color : colors.mutedForeground },
+                  ]}
+                >
+                  {cat.name}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        )}
       </View>
 
-      <FlatList
-        data={filtered}
-        keyExtractor={(it) => it.id}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={[
-          styles.list,
-          { paddingBottom: Platform.OS === "web" ? 34 + 84 + 16 : insets.bottom + 100 },
-        ]}
-        ListEmptyComponent={
-          <EmptyState
-            icon="search-outline"
-            title={query ? "No results found" : "Start searching"}
-            description={
-              query
-                ? `Nothing matched "${query}". Try a different keyword.`
-                : "Search across all your saved content, notes, and tags."
-            }
-          />
-        }
-        renderItem={({ item }) => {
-          const cat = categories.find((c) => c.id === item.categoryId);
-          return (
-            <ContentCard
-              item={item}
-              categoryColor={cat?.color}
-              categoryName={cat?.name}
-              showCategory
-              onPress={() => router.push(`/content/${item.id}`)}
-              onDelete={() => deleteItem(item.id)}
+      {isSearching ? (
+        <FlatList
+          data={filtered}
+          keyExtractor={(it) => it.id}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={[
+            styles.list,
+            { paddingBottom: Platform.OS === "web" ? 34 + 84 + 16 : insets.bottom + 100 },
+          ]}
+          ListEmptyComponent={
+            <EmptyState
+              icon="search-outline"
+              title="No results found"
+              description={`Nothing matched "${query}". Try a different keyword.`}
             />
-          );
-        }}
-      />
+          }
+          renderItem={({ item }) => {
+            const cat = categories.find((c) => c.id === item.categoryId);
+            return (
+              <ContentCard
+                item={item}
+                categoryColor={cat?.color}
+                categoryName={cat?.name}
+                showCategory
+                onPress={() => router.push(`/content/${item.id}`)}
+                onDelete={() => {
+                  Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+                  deleteItem(item.id);
+                }}
+              />
+            );
+          }}
+        />
+      ) : (
+        <FlatList
+          data={recentItems}
+          keyExtractor={(it) => it.id}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={[
+            styles.list,
+            { paddingBottom: Platform.OS === "web" ? 34 + 84 + 16 : insets.bottom + 100 },
+          ]}
+          ListHeaderComponent={
+            recentItems.length > 0 ? (
+              <Text style={[styles.recentLabel, { color: colors.mutedForeground }]}>
+                RECENTLY SAVED
+              </Text>
+            ) : null
+          }
+          ListEmptyComponent={
+            <EmptyState
+              icon="search-outline"
+              title="Nothing saved yet"
+              description="Save videos, links, and articles to start building your library."
+            />
+          }
+          renderItem={({ item }) => {
+            const cat = categories.find((c) => c.id === item.categoryId);
+            return (
+              <ContentCard
+                item={item}
+                categoryColor={cat?.color}
+                categoryName={cat?.name}
+                showCategory
+                onPress={() => router.push(`/content/${item.id}`)}
+                onDelete={() => {
+                  Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+                  deleteItem(item.id);
+                }}
+              />
+            );
+          }}
+        />
+      )}
     </View>
   );
 }
@@ -215,4 +265,10 @@ const styles = StyleSheet.create({
     marginHorizontal: 4,
   },
   list: { padding: 16 },
+  recentLabel: {
+    fontSize: 11,
+    fontFamily: "Inter_600SemiBold",
+    letterSpacing: 1,
+    marginBottom: 12,
+  },
 });

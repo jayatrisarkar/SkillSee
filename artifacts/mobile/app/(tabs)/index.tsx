@@ -1,6 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import React, { useMemo } from "react";
 import {
@@ -37,11 +36,6 @@ export default function LibraryScreen() {
   const { profile } = useProfile();
 
   const topInset = Platform.OS === "web" ? 67 : insets.top;
-
-  const recentItems = useMemo(
-    () => items.filter((it) => !it.isArchived).slice(0, 5),
-    [items]
-  );
 
   const stats = useMemo(() => computeStats(items, categories), [items, categories]);
   const insights = useMemo(() => generateInsights(stats, items, categories), [stats, items, categories]);
@@ -84,14 +78,6 @@ export default function LibraryScreen() {
               {getGreeting()}, {firstName} 👋
             </Text>
             <View style={styles.titleRow}>
-              <LinearGradient
-                colors={["#6366F1", "#8B5CF6"]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.logoIcon}
-              >
-                <Text style={styles.logoEmoji}>⚡</Text>
-              </LinearGradient>
               <Text style={[styles.titleBrand, { color: colors.primary }]}>Skill</Text>
               <Text style={[styles.titleBrand, { color: colors.foreground }]}>Flow</Text>
             </View>
@@ -145,35 +131,6 @@ export default function LibraryScreen() {
             </Text>
             <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
           </TouchableOpacity>
-        )}
-
-        {/* ── Recently Saved ── */}
-        {recentItems.length > 0 && (
-          <View>
-            <View style={styles.rowHeader}>
-              <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>RECENTLY SAVED</Text>
-              <TouchableOpacity onPress={() => router.push("/(tabs)/search")}>
-                <Text style={[styles.seeAll, { color: colors.primary }]}>See all</Text>
-              </TouchableOpacity>
-            </View>
-            {recentItems.map((item) => {
-              const cat = categories.find((c) => c.id === item.categoryId);
-              return (
-                <ContentCard
-                  key={item.id}
-                  item={item}
-                  categoryColor={cat?.color}
-                  categoryName={cat?.name}
-                  showCategory
-                  onPress={() => router.push(`/content/${item.id}`)}
-                  onDelete={() => {
-                    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-                    deleteItem(item.id);
-                  }}
-                />
-              );
-            })}
-          </View>
         )}
 
         {/* ── Continue Learning ── */}
@@ -273,14 +230,6 @@ const styles = StyleSheet.create({
   greetingBlock: { gap: 2 },
   greeting: { fontSize: 13, fontFamily: "Inter_500Medium", letterSpacing: 0.2 },
   titleRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-  logoIcon: {
-    width: 34,
-    height: 34,
-    borderRadius: 10,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  logoEmoji: { fontSize: 18 },
   titleBrand: { fontSize: 28, fontFamily: "Inter_700Bold", letterSpacing: -0.8 },
   avatarSmall: {
     width: 42,
