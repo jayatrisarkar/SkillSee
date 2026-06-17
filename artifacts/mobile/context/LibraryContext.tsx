@@ -9,6 +9,7 @@ import React, {
 } from "react";
 import { getApiHeaders, isUserSignedIn, onAuthStateChange } from "./clerkBridge";
 import { getPendingImport, clearPendingImport } from "./pendingImport";
+import { useToast } from "./ToastContext";
 
 export type ContentStatus = "none" | "learning" | "completed";
 
@@ -137,6 +138,7 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
   const [isSyncing, setIsSyncing] = useState(false);
   const [isSignedIn, setIsSignedIn] = useState(isUserSignedIn);
   const prevSignedIn = useRef<boolean | null>(null);
+  const { showToast } = useToast();
 
   useEffect(() => onAuthStateChange(setIsSignedIn), []);
 
@@ -348,8 +350,11 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
       const pending = await getPendingImport();
       if (pending) {
         await clearPendingImport();
+        let totalItems = 0;
+        const catNames: string[] = [];
         for (const catData of pending.cats) {
           const cat = addCategory(catData.name, catData.icon, catData.color);
+          catNames.push(catData.name);
           for (const rawItem of catData.items) {
             addItem({
               title: rawItem.t,
@@ -360,12 +365,19 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
               status: "none",
               isArchived: false,
             });
+            totalItems++;
           }
         }
+        const itemWord = totalItems === 1 ? "item" : "items";
+        const dest =
+          catNames.length === 1
+            ? catNames[0]
+            : `${catNames.length} categories`;
+        showToast(`${totalItems} ${itemWord} added to ${dest}`);
       }
     } catch {}
     setIsSyncing(false);
-  }, [isSignedIn, saveCategories, saveItems, addCategory, addItem]);
+  }, [isSignedIn, saveCategories, saveItems, addCategory, addItem, showToast]);
 
   // ── Initial load ──────────────────────────────────────────────────────────
 

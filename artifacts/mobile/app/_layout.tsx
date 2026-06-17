@@ -20,6 +20,7 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { LibraryProvider } from "@/context/LibraryContext";
 import { ProfileProvider } from "@/context/ProfileContext";
+import { ToastProvider } from "@/context/ToastContext";
 import { ClerkBridge } from "@/context/AuthContext";
 import { ShareProvider } from "@/context/ShareContext";
 import { initializeRevenueCat, SubscriptionProvider } from "@/lib/revenuecat";
@@ -106,11 +107,13 @@ export default function RootLayout() {
                 <SubscriptionProvider>
                   <KeyboardProvider>
                     <ProfileProvider>
-                      <LibraryProvider>
-                        <ShareProvider>
-                          <RootLayoutNav />
-                        </ShareProvider>
-                      </LibraryProvider>
+                      <ToastProvider>
+                        <LibraryProvider>
+                          <ShareProvider>
+                            <RootLayoutNav />
+                          </ShareProvider>
+                        </LibraryProvider>
+                      </ToastProvider>
                     </ProfileProvider>
                   </KeyboardProvider>
                 </SubscriptionProvider>

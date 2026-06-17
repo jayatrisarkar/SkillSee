@@ -15,6 +15,7 @@ import {
 import { useLibrary } from "@/context/LibraryContext";
 import { isUserSignedIn, onAuthStateChange } from "@/context/clerkBridge";
 import { setPendingImport } from "@/context/pendingImport";
+import { useToast } from "@/context/ToastContext";
 
 interface PlaylistItem { t: string; u: string }
 interface CatBlock { n: string; i: string; c: string; items: PlaylistItem[] }
@@ -54,6 +55,7 @@ function ItemRow({ item, index, color }: { item: PlaylistItem; index: number; co
 
 function SavePlaylistButton({ data }: { data: PlaylistData }) {
   const { addCategory, addItem } = useLibrary();
+  const { showToast } = useToast();
   const [signedIn, setSignedIn] = useState(isUserSignedIn);
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -63,6 +65,7 @@ function SavePlaylistButton({ data }: { data: PlaylistData }) {
   const doImport = useCallback(() => {
     setSaving(true);
     try {
+      let totalItems = 0;
       if (data.type === "cat") {
         const cat = addCategory(data.n, data.i ?? "folder-outline", data.c ?? "#6366F1");
         for (const item of data.items) {
@@ -75,8 +78,13 @@ function SavePlaylistButton({ data }: { data: PlaylistData }) {
             status: "none",
             isArchived: false,
           });
+          totalItems++;
         }
+        const itemWord = totalItems === 1 ? "item" : "items";
+        showToast(`${totalItems} ${itemWord} added to ${data.n}`);
       } else {
+        const catCount = data.cats.length;
+        const firstName = data.cats[0]?.n ?? "your library";
         for (const block of data.cats) {
           const cat = addCategory(block.n, block.i ?? "folder-outline", block.c ?? "#6366F1");
           for (const item of block.items) {
@@ -89,14 +97,18 @@ function SavePlaylistButton({ data }: { data: PlaylistData }) {
               status: "none",
               isArchived: false,
             });
+            totalItems++;
           }
         }
+        const itemWord = totalItems === 1 ? "item" : "items";
+        const dest = catCount === 1 ? firstName : `${catCount} categories`;
+        showToast(`${totalItems} ${itemWord} added to ${dest}`);
       }
       setSaved(true);
     } finally {
       setSaving(false);
     }
-  }, [data, addCategory, addItem]);
+  }, [data, addCategory, addItem, showToast]);
 
   const handleSave = useCallback(async () => {
     if (signedIn) {
