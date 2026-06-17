@@ -4,8 +4,10 @@ import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useEffect, useState } from "react";
 import {
+  Image,
   Modal,
   Platform,
+  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -38,142 +40,149 @@ export function WelcomeModal() {
     setVisible(false);
   }
 
+  const topPad = Platform.OS === "web" ? 60 : insets.top;
+  const botPad = (Platform.OS === "web" ? 34 : insets.bottom) + 24;
+
   return (
     <Modal visible={visible} animationType="fade" presentationStyle="fullScreen">
-      <LinearGradient
-        colors={["#06080E", "#0C1424", "#07090F"]}
-        style={[styles.container, { paddingTop: Platform.OS === "web" ? 60 : insets.top }]}
-      >
-        {/* Logo area */}
-        <View style={styles.logoArea}>
-          <View style={styles.logoGlow}>
-            <LinearGradient
-              colors={["#818CF8", "#6366F1", "#4F46E5"]}
-              style={styles.logoGradient}
-            >
-              <Ionicons name="library" size={32} color="#fff" />
-            </LinearGradient>
-          </View>
-          <Text style={styles.appName}>SkillSee</Text>
-          <Text style={styles.tagline}>Save. Learn. Master.</Text>
-          <Text style={styles.heroSub}>Your personal learning vault</Text>
-        </View>
-
-        {/* Features */}
-        <View style={styles.features}>
-          {FEATURES.map((f) => (
-            <View key={f.title} style={styles.featureRow}>
-              <View style={[styles.featureIcon, { backgroundColor: f.color + "18" }]}>
-                <Ionicons name={f.icon as any} size={19} color={f.color} />
-              </View>
-              <View style={styles.featureText}>
-                <Text style={styles.featureTitle}>{f.title}</Text>
-                <Text style={styles.featureDesc}>{f.desc}</Text>
-              </View>
+      <LinearGradient colors={["#06080E", "#0C1424", "#07090F"]} style={styles.container}>
+        <ScrollView
+          contentContainerStyle={[styles.scroll, { paddingTop: topPad + 20, paddingBottom: botPad }]}
+          showsVerticalScrollIndicator={false}
+          bounces={false}
+        >
+          {/* Logo area */}
+          <View style={styles.logoArea}>
+            {/* Real app icon */}
+            <View style={styles.logoGlow}>
+              <Image
+                source={require("../assets/images/icon.png")}
+                style={styles.logoImage}
+                resizeMode="cover"
+              />
             </View>
-          ))}
-        </View>
+            <Text style={styles.appName}>SkillSee</Text>
+            <Text style={styles.tagline}>Save. Learn. Master.</Text>
+            <Text style={styles.heroSub}>Your personal learning vault</Text>
+          </View>
 
-        {/* CTA */}
-        <View style={[styles.footer, { paddingBottom: (Platform.OS === "web" ? 34 : insets.bottom) + 24 }]}>
-          <TouchableOpacity
-            style={styles.ctaBtn}
-            onPress={handleGetStarted}
-            activeOpacity={0.85}
-          >
-            <LinearGradient
-              colors={["#818CF8", "#6366F1", "#4338CA"]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.ctaGradient}
+          {/* Features */}
+          <View style={styles.features}>
+            {FEATURES.map((f) => (
+              <View key={f.title} style={styles.featureRow}>
+                <View style={[styles.featureIcon, { backgroundColor: f.color + "18" }]}>
+                  <Ionicons name={f.icon as any} size={19} color={f.color} />
+                </View>
+                <View style={styles.featureText}>
+                  <Text style={styles.featureTitle}>{f.title}</Text>
+                  <Text style={styles.featureDesc}>{f.desc}</Text>
+                </View>
+              </View>
+            ))}
+          </View>
+
+          {/* CTA */}
+          <View style={styles.footer}>
+            <TouchableOpacity
+              style={styles.ctaBtn}
+              onPress={handleGetStarted}
+              activeOpacity={0.85}
             >
-              <Text style={styles.ctaText}>Get Started</Text>
-              <Ionicons name="arrow-forward" size={17} color="#FFFFFF" />
-            </LinearGradient>
-          </TouchableOpacity>
-          <Text style={styles.privacyNote}>All data stored locally on your device</Text>
-        </View>
+              <LinearGradient
+                colors={["#818CF8", "#6366F1", "#4338CA"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.ctaGradient}
+              >
+                <Text style={styles.ctaText}>Get Started</Text>
+                <Ionicons name="arrow-forward" size={17} color="#FFFFFF" />
+              </LinearGradient>
+            </TouchableOpacity>
+            <Text style={styles.privacyNote}>All data stored locally on your device</Text>
+          </View>
+        </ScrollView>
       </LinearGradient>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
+  container: { flex: 1 },
+  scroll: {
     paddingHorizontal: 28,
-    justifyContent: "space-between",
+    flexGrow: 1,
   },
   logoArea: {
-    flex: 1,
     alignItems: "center",
-    justifyContent: "center",
-    gap: 10,
-    paddingTop: 20,
+    marginBottom: 40,
   },
   logoGlow: {
     shadowColor: "#6366F1",
     shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.7,
+    shadowOpacity: 0.65,
     shadowRadius: 32,
-    marginBottom: 10,
+    marginBottom: 16,
   },
-  logoGradient: {
-    width: 72,
-    height: 72,
+  logoImage: {
+    width: 84,
+    height: 84,
     borderRadius: 22,
-    alignItems: "center",
-    justifyContent: "center",
   },
   appName: {
     fontSize: 38,
     fontFamily: "Inter_700Bold",
     color: "#E8EDF5",
     letterSpacing: -1.2,
+    marginBottom: 6,
   },
   tagline: {
     fontSize: 16,
     fontFamily: "Inter_600SemiBold",
     color: "#6366F1",
     letterSpacing: 0.5,
+    marginBottom: 6,
   },
   heroSub: {
     fontSize: 14,
     fontFamily: "Inter_400Regular",
     color: "#4D5D7A",
-    marginTop: 2,
   },
   features: {
-    gap: 16,
-    paddingVertical: 32,
+    marginBottom: 40,
   },
   featureRow: {
     flexDirection: "row",
-    alignItems: "center",
-    gap: 16,
+    alignItems: "flex-start",
+    marginBottom: 20,
   },
   featureIcon: {
-    width: 42,
-    height: 42,
-    borderRadius: 12,
+    width: 44,
+    height: 44,
+    borderRadius: 13,
     alignItems: "center",
     justifyContent: "center",
+    marginRight: 16,
+    flexShrink: 0,
   },
-  featureText: { flex: 1, gap: 2 },
+  featureText: {
+    flex: 1,
+    paddingTop: 2,
+  },
   featureTitle: {
     fontSize: 15,
     fontFamily: "Inter_600SemiBold",
     color: "#E8EDF5",
+    marginBottom: 3,
   },
   featureDesc: {
     fontSize: 13,
     fontFamily: "Inter_400Regular",
     color: "#4D5D7A",
-    lineHeight: 18,
+    lineHeight: 19,
   },
   footer: {
-    gap: 14,
     alignItems: "center",
+    gap: 14,
   },
   ctaBtn: {
     width: "100%",
