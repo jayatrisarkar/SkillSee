@@ -19,50 +19,64 @@ import { useColors } from "@/hooks/useColors";
 import { useSubscription } from "@/lib/revenuecat";
 import { ConfirmModal } from "@/components/ConfirmModal";
 
-const PREMIUM_FEATURES = [
-  { icon: "cloud-outline" as const, color: "#6366F1", title: "Cloud Backup", description: "Your library safely backed up. Never lose your saved content." },
-  { icon: "phone-portrait-outline" as const, color: "#8B5CF6", title: "Cross-Device Sync", description: "Access your library on any phone or tablet, instantly synced." },
-  { icon: "albums-outline" as const, color: "#A855F7", title: "Unlimited Categories", description: "Organize without limits — as many custom categories as you need." },
-  { icon: "options-outline" as const, color: "#EC4899", title: "Advanced Filters", description: "Filter by date, status, platform, category, and more." },
-  { icon: "download-outline" as const, color: "#10B981", title: "Export Library", description: "Export your full library as JSON, CSV, or PDF anytime." },
-];
+// ── Feature definitions ──────────────────────────────────────────────────────
 
-const AI_FEATURES = [
-  { icon: "sparkles-outline" as const, color: "#F59E0B", title: "AI Auto-Categorization", description: "AI reads your saved links and sorts them automatically." },
-  { icon: "document-text-outline" as const, color: "#F97316", title: "AI Summaries", description: "Get a quick AI-written summary of any video or article you save." },
-  { icon: "bulb-outline" as const, color: "#EF4444", title: "AI Recommendations", description: "Personalized suggestions based on what you're learning." },
-  { icon: "search-circle-outline" as const, color: "#22D3EE", title: "Smart Search", description: "Search inside video transcripts and article content." },
+interface FeatureDef {
+  icon: React.ComponentProps<typeof Ionicons>["name"];
+  color: string;
+  title: string;
+  description: string;
+  free: boolean;
+}
+
+const FEATURES: FeatureDef[] = [
+  {
+    icon: "albums-outline",
+    color: "#6366F1",
+    title: "Unlimited Categories",
+    description: "Create as many categories as you need with no cap.",
+    free: false,
+  },
+  {
+    icon: "color-palette-outline",
+    color: "#A855F7",
+    title: "Premium Customization",
+    description: "Pick any icon and any color for every category.",
+    free: false,
+  },
+  {
+    icon: "cloud-outline",
+    color: "#22D3EE",
+    title: "Cloud Backup",
+    description: "Your library backed up and synced across devices.",
+    free: false,
+  },
+  {
+    icon: "options-outline",
+    color: "#EC4899",
+    title: "Advanced Filters",
+    description: "Filter by date, status, platform, category, and more.",
+    free: false,
+  },
+  {
+    icon: "sparkles-outline",
+    color: "#F59E0B",
+    title: "Future AI Tools",
+    description: "Auto-categorization, smart summaries, and AI recommendations.",
+    free: false,
+  },
 ];
 
 const FREE_FEATURES = [
-  "Save unlimited links & videos",
-  "Up to 5 custom categories",
-  "Basic search",
-  "Basic progress tracking",
+  { icon: "bookmark-outline" as const, text: "Unlimited saved links" },
+  { icon: "create-outline" as const, text: "Notes on every link" },
+  { icon: "search-outline" as const, text: "Search your library" },
+  { icon: "school-outline" as const, text: "Learning & Completed status" },
+  { icon: "sunny-outline" as const, text: "Dark & Light mode" },
+  { icon: "albums-outline" as const, text: "Up to 10 categories" },
 ];
 
-// RevenueCat standard package identifiers
-const PKG_MONTHLY = "$rc_monthly";
-const PKG_ANNUAL = "$rc_annual";
-
-function pkgIsMonthly(pkg: PurchasesPackage) {
-  return (pkg.identifier as string) === PKG_MONTHLY;
-}
-function pkgIsAnnual(pkg: PurchasesPackage) {
-  return (pkg.identifier as string) === PKG_ANNUAL;
-}
-
-function pkgLabel(pkg: PurchasesPackage): string {
-  if (pkgIsMonthly(pkg)) return "Monthly";
-  if (pkgIsAnnual(pkg)) return "Yearly";
-  return pkg.product.title;
-}
-
-function pkgPer(pkg: PurchasesPackage): string {
-  if (pkgIsMonthly(pkg)) return "/ month";
-  if (pkgIsAnnual(pkg)) return "/ year";
-  return "";
-}
+// ── Screen ────────────────────────────────────────────────────────────────────
 
 export default function PremiumScreen() {
   const colors = useColors();
@@ -73,47 +87,27 @@ export default function PremiumScreen() {
   const { offerings, isSubscribed, purchase, restore, isPurchasing, isRestoring, isLoading } =
     useSubscription();
 
-  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [confirmPkg, setConfirmPkg] = useState<PurchasesPackage | null>(null);
   const [successVisible, setSuccessVisible] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const packages = offerings?.current?.availablePackages ?? [];
+  // Use monthly package from RevenueCat, fall back to null (price shown from RC or hardcoded)
+  const monthlyPkg = offerings?.current?.availablePackages.find(
+    (p) => (p.identifier as string) === "$rc_monthly"
+  ) ?? null;
 
-  // Sort: monthly first, then annual, then rest
-  const sorted = [...packages].sort((a, b) => {
-    const order = [PKG_MONTHLY, PKG_ANNUAL];
-    const ai = order.indexOf(a.identifier as string);
-    const bi = order.indexOf(b.identifier as string);
-    return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
-  });
+  const displayPrice = monthlyPkg?.product.priceString ?? "$1.99";
 
-  const selectedPkg =
-    sorted.find((p) => p.identifier === selectedId) ??
-    sorted.find((p) => pkgIsAnnual(p)) ??
-    sorted[0] ??
-    null;
-
-  function savingsLabel(pkg: PurchasesPackage): string | null {
-    if (!pkgIsAnnual(pkg)) return null;
-    const monthly = sorted.find(pkgIsMonthly);
-    if (!monthly) return "Save ~16%";
-    const yearlyIfMonthly = monthly.product.price * 12;
-    const pct = Math.round(((yearlyIfMonthly - pkg.product.price) / yearlyIfMonthly) * 100);
-    return pct > 0 ? `Save ${pct}%` : null;
-  }
-
-  function monthlyEquiv(pkg: PurchasesPackage): string | null {
-    if (!pkgIsAnnual(pkg)) return null;
-    return `$${(pkg.product.price / 12).toFixed(2)} / mo`;
-  }
-
-  async function handlePurchase(pkg: PurchasesPackage) {
-    if (__DEV__) {
-      setConfirmPkg(pkg);
+  async function handlePurchase() {
+    if (!monthlyPkg) {
+      setErrorMsg("Subscription not available right now. Please try again later.");
       return;
     }
-    await doPurchase(pkg);
+    if (__DEV__) {
+      setConfirmPkg(monthlyPkg);
+      return;
+    }
+    await doPurchase(monthlyPkg);
   }
 
   async function doPurchase(pkg: PurchasesPackage) {
@@ -138,25 +132,40 @@ export default function PremiumScreen() {
     }
   }
 
-  // ── Already subscribed ───────────────────────────────────────────────
+  // ── Already subscribed ──────────────────────────────────────────────────────
   if (isSubscribed) {
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <TouchableOpacity style={[styles.closeBtn, { top: topInset + 12 }]} onPress={() => router.back()} activeOpacity={0.7}>
+        <TouchableOpacity
+          style={[styles.closeBtn, { top: topInset + 12 }]}
+          onPress={() => router.back()}
+          activeOpacity={0.7}
+        >
           <Ionicons name="close" size={22} color={colors.mutedForeground} />
         </TouchableOpacity>
-        <View style={styles.alreadyWrap}>
-          <LinearGradient colors={["#6366F1", "#A855F7", "#EC4899"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.heroBadge}>
+        <View style={styles.subscribedWrap}>
+          <LinearGradient
+            colors={["#6366F1", "#A855F7"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.heroBadge}
+          >
             <Ionicons name="diamond" size={28} color="#FFFFFF" />
           </LinearGradient>
           <Text style={[styles.heroTitle, { color: colors.foreground }]}>
-            You're <Text style={styles.heroAccent}>Premium</Text>
+            You're{" "}
+            <Text style={styles.heroAccent}>Premium</Text>
           </Text>
           <Text style={[styles.heroSubtitle, { color: colors.mutedForeground }]}>
             All features are unlocked. Thank you for supporting SkillSee!
           </Text>
-          <TouchableOpacity style={styles.ctaWrap} onPress={() => router.back()} activeOpacity={0.85}>
-            <LinearGradient colors={["#6366F1", "#A855F7"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.ctaBtn}>
+          <TouchableOpacity onPress={() => router.back()} activeOpacity={0.85} style={styles.ctaWrap}>
+            <LinearGradient
+              colors={["#6366F1", "#A855F7"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.ctaBtn}
+            >
               <Ionicons name="checkmark-circle" size={18} color="#FFFFFF" />
               <Text style={styles.ctaBtnText}>Back to App</Text>
             </LinearGradient>
@@ -166,14 +175,15 @@ export default function PremiumScreen() {
     );
   }
 
+  // ── Main paywall ────────────────────────────────────────────────────────────
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
 
-      {/* Dev-mode purchase confirmation */}
+      {/* Dev-mode test purchase confirmation */}
       <ConfirmModal
         visible={!!confirmPkg}
         title="Test Purchase"
-        message={`This is a test-store purchase.\n\n${confirmPkg?.product.title ?? ""} — ${confirmPkg?.product.priceString ?? ""}`}
+        message={`Simulate buying:\n\n${confirmPkg?.product.title ?? "Premium Monthly"} — ${confirmPkg?.product.priceString ?? displayPrice}/month`}
         actions={[
           {
             label: "Confirm Purchase",
@@ -193,8 +203,14 @@ export default function PremiumScreen() {
       <ConfirmModal
         visible={successVisible}
         title="Welcome to Premium! 🎉"
-        message="Your subscription is active. All premium features are now unlocked."
-        actions={[{ label: "Let's go!", primary: true, onPress: () => { setSuccessVisible(false); router.back(); } }]}
+        message="Your subscription is active. All features are now unlocked."
+        actions={[
+          {
+            label: "Let's go!",
+            primary: true,
+            onPress: () => { setSuccessVisible(false); router.back(); },
+          },
+        ]}
         onDismiss={() => { setSuccessVisible(false); router.back(); }}
       />
 
@@ -207,110 +223,72 @@ export default function PremiumScreen() {
         onDismiss={() => setErrorMsg(null)}
       />
 
-      <TouchableOpacity style={[styles.closeBtn, { top: topInset + 12 }]} onPress={() => router.back()} activeOpacity={0.7}>
+      <TouchableOpacity
+        style={[styles.closeBtn, { top: topInset + 12 }]}
+        onPress={() => router.back()}
+        activeOpacity={0.7}
+      >
         <Ionicons name="close" size={22} color={colors.mutedForeground} />
       </TouchableOpacity>
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={[styles.content, { paddingTop: topInset + 52, paddingBottom: insets.bottom + 40 }]}
+        contentContainerStyle={[
+          styles.content,
+          { paddingTop: topInset + 52, paddingBottom: insets.bottom + 40 },
+        ]}
       >
         {/* Hero */}
-        <LinearGradient colors={["#6366F1", "#A855F7", "#EC4899"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.heroBadge}>
+        <LinearGradient
+          colors={["#6366F1", "#A855F7", "#EC4899"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.heroBadge}
+        >
           <Ionicons name="diamond" size={28} color="#FFFFFF" />
         </LinearGradient>
+
         <Text style={[styles.heroTitle, { color: colors.foreground }]}>
-          SkillSee <Text style={styles.heroAccent}>Premium</Text>
+          SkillSee{" "}
+          <Text style={styles.heroAccent}>Premium</Text>
         </Text>
         <Text style={[styles.heroSubtitle, { color: colors.mutedForeground }]}>
-          Affordable for students. Powerful for everyone.
+          Organize your learning without limits.
         </Text>
 
-        {/* Plan selector */}
-        {isLoading ? (
-          <View style={styles.loadingWrap}>
-            <ActivityIndicator color={colors.primary} />
-            <Text style={[styles.loadingText, { color: colors.mutedForeground }]}>Loading plans…</Text>
-          </View>
-        ) : sorted.length === 0 ? (
-          <View style={[styles.noPlansWrap, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <Ionicons name="alert-circle-outline" size={22} color={colors.mutedForeground} />
-            <Text style={[styles.noPlansText, { color: colors.mutedForeground }]}>Plans unavailable. Check back soon.</Text>
-          </View>
-        ) : (
-          <View style={styles.planRow}>
-            {sorted.map((pkg) => {
-              const active = selectedPkg?.identifier === pkg.identifier;
-              const savings = savingsLabel(pkg);
-              const equiv = monthlyEquiv(pkg);
-              return (
-                <TouchableOpacity
-                  key={pkg.identifier as string}
-                  style={[
-                    styles.planCard,
-                    { backgroundColor: colors.card, borderColor: active ? "#6366F1" : colors.border },
-                    active && styles.planCardActive,
-                  ]}
-                  onPress={() => {
-                    setSelectedId(pkg.identifier as string);
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  }}
-                  activeOpacity={0.85}
-                >
-                  {savings && (
-                    <View style={styles.noteBadge}>
-                      <Text style={styles.noteBadgeText}>{savings}</Text>
-                    </View>
-                  )}
-                  <Text style={[styles.planLabel, { color: active ? "#6366F1" : colors.mutedForeground }]}>
-                    {pkgLabel(pkg)}
-                  </Text>
-                  <Text style={[styles.planPrice, { color: colors.foreground }]}>
-                    {pkg.product.priceString}
-                  </Text>
-                  <Text style={[styles.planPer, { color: colors.mutedForeground }]}>
-                    {pkgPer(pkg)}
-                  </Text>
-                  {equiv && (
-                    <Text style={[styles.planSubtext, { color: colors.mutedForeground }]}>{equiv}</Text>
-                  )}
-                  {active && (
-                    <View style={styles.checkDot}>
-                      <Ionicons name="checkmark" size={10} color="#FFFFFF" />
-                    </View>
-                  )}
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        )}
-
-        {/* Free tier */}
-        <View style={[styles.section, { borderColor: colors.border }]}>
-          <View style={styles.sectionHeader}>
-            <View style={[styles.tierBadge, { backgroundColor: colors.secondary }]}>
-              <Text style={[styles.tierBadgeText, { color: colors.mutedForeground }]}>FREE</Text>
-            </View>
-            <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Always included</Text>
-          </View>
-          {FREE_FEATURES.map((f) => (
-            <View key={f} style={styles.simpleRow}>
-              <Ionicons name="checkmark-circle" size={16} color="#10B981" />
-              <Text style={[styles.simpleText, { color: colors.mutedForeground }]}>{f}</Text>
-            </View>
-          ))}
+        {/* Price chip */}
+        <View style={[styles.priceChip, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <Text style={[styles.priceChipAmount, { color: colors.foreground }]}>
+            {isLoading ? "—" : displayPrice}
+          </Text>
+          <Text style={[styles.priceChipPer, { color: colors.mutedForeground }]}>/month</Text>
+          <View style={styles.priceChipDot} />
+          <Text style={[styles.priceChipCancel, { color: colors.mutedForeground }]}>Cancel anytime</Text>
         </View>
 
-        {/* Premium now */}
+        {/* Premium features */}
         <View style={styles.sectionHeader}>
-          <LinearGradient colors={["#6366F1", "#A855F7"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.tierBadgePremium}>
-            <Text style={styles.tierBadgeTextPremium}>PREMIUM</Text>
+          <LinearGradient
+            colors={["#6366F1", "#A855F7"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.premiumBadge}
+          >
+            <Text style={styles.premiumBadgeText}>PREMIUM</Text>
           </LinearGradient>
-          <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Available now</Text>
+          <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Everything unlocked</Text>
         </View>
+
         <View style={[styles.featuresList, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          {PREMIUM_FEATURES.map((feat, i) => (
-            <View key={feat.title} style={[styles.featureRow, { borderBottomColor: colors.border }, i === PREMIUM_FEATURES.length - 1 && styles.featureRowLast]}>
+          {FEATURES.map((feat, i) => (
+            <View
+              key={feat.title}
+              style={[
+                styles.featureRow,
+                { borderBottomColor: colors.border },
+                i === FEATURES.length - 1 && styles.featureRowLast,
+              ]}
+            >
               <View style={[styles.featureIcon, { backgroundColor: feat.color + "18" }]}>
                 <Ionicons name={feat.icon} size={20} color={feat.color} />
               </View>
@@ -323,63 +301,73 @@ export default function PremiumScreen() {
           ))}
         </View>
 
-        {/* AI coming soon */}
+        {/* Free tier */}
         <View style={styles.sectionHeader}>
-          <View style={[styles.tierBadgeAI, { backgroundColor: "#F59E0B22" }]}>
-            <Ionicons name="sparkles" size={10} color="#F59E0B" />
-            <Text style={[styles.tierBadgeAIText, { color: "#F59E0B" }]}>AI · COMING SOON</Text>
+          <View style={[styles.freeBadge, { backgroundColor: colors.secondary }]}>
+            <Text style={[styles.freeBadgeText, { color: colors.mutedForeground }]}>FREE</Text>
           </View>
-          <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Included when ready</Text>
+          <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Always included</Text>
         </View>
-        <View style={[styles.featuresList, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          {AI_FEATURES.map((feat, i) => (
-            <View key={feat.title} style={[styles.featureRow, { borderBottomColor: colors.border }, i === AI_FEATURES.length - 1 && styles.featureRowLast]}>
-              <View style={[styles.featureIcon, { backgroundColor: feat.color + "18" }]}>
-                <Ionicons name={feat.icon} size={20} color={feat.color} />
-              </View>
-              <View style={styles.featureText}>
-                <Text style={[styles.featureTitle, { color: colors.foreground }]}>{feat.title}</Text>
-                <Text style={[styles.featureDesc, { color: colors.mutedForeground }]}>{feat.description}</Text>
-              </View>
-              <Ionicons name="time-outline" size={18} color={colors.mutedForeground} />
+
+        <View style={[styles.freeList, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          {FREE_FEATURES.map((f, i) => (
+            <View
+              key={f.text}
+              style={[
+                styles.freeRow,
+                { borderBottomColor: colors.border },
+                i === FREE_FEATURES.length - 1 && styles.featureRowLast,
+              ]}
+            >
+              <Ionicons name={f.icon} size={17} color={colors.mutedForeground} />
+              <Text style={[styles.freeText, { color: colors.mutedForeground }]}>{f.text}</Text>
             </View>
           ))}
         </View>
 
         {/* CTA */}
-        {sorted.length > 0 && selectedPkg && (
-          <TouchableOpacity
-            onPress={() => handlePurchase(selectedPkg)}
-            activeOpacity={0.85}
-            style={styles.ctaWrap}
-            disabled={isPurchasing || isRestoring}
+        <TouchableOpacity
+          onPress={handlePurchase}
+          activeOpacity={0.85}
+          style={styles.ctaWrap}
+          disabled={isPurchasing || isRestoring}
+        >
+          <LinearGradient
+            colors={["#6366F1", "#A855F7"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.ctaBtn}
           >
-            <LinearGradient colors={["#6366F1", "#A855F7"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.ctaBtn}>
-              {isPurchasing ? (
-                <ActivityIndicator color="#FFFFFF" size="small" />
-              ) : (
-                <>
-                  <Ionicons name="diamond-outline" size={18} color="#FFFFFF" />
-                  <Text style={styles.ctaBtnText}>
-                    Start Premium · {selectedPkg.product.priceString}
-                    {pkgIsMonthly(selectedPkg) ? " / mo" : pkgIsAnnual(selectedPkg) ? " / yr" : ""}
-                  </Text>
-                </>
-              )}
-            </LinearGradient>
-          </TouchableOpacity>
-        )}
+            {isPurchasing ? (
+              <ActivityIndicator color="#FFFFFF" size="small" />
+            ) : (
+              <>
+                <Ionicons name="diamond-outline" size={18} color="#FFFFFF" />
+                <Text style={styles.ctaBtnText}>
+                  {isLoading ? "Loading…" : `Upgrade for ${displayPrice}/month`}
+                </Text>
+              </>
+            )}
+          </LinearGradient>
+        </TouchableOpacity>
 
         <Text style={[styles.legalText, { color: colors.mutedForeground }]}>
-          Cancel anytime. Renews automatically.{"\n"}
-          Secure payment via App Store or Google Play · Prices in USD.
+          Cancel anytime. Renews automatically each month.{"\n"}
+          Payment via App Store or Google Play · Prices in USD.
         </Text>
 
-        <TouchableOpacity onPress={handleRestore} disabled={isRestoring} activeOpacity={0.7} style={styles.restoreBtn}>
+        <TouchableOpacity
+          onPress={handleRestore}
+          disabled={isRestoring}
+          activeOpacity={0.7}
+          style={styles.restoreBtn}
+        >
           {isRestoring ? (
             <ActivityIndicator color={colors.mutedForeground} size="small" />
           ) : (
-            <Text style={[styles.restoreText, { color: colors.mutedForeground }]}>Restore purchases</Text>
+            <Text style={[styles.restoreText, { color: colors.mutedForeground }]}>
+              Restore purchases
+            </Text>
           )}
         </TouchableOpacity>
       </ScrollView>
@@ -387,59 +375,153 @@ export default function PremiumScreen() {
   );
 }
 
+// ── Styles ────────────────────────────────────────────────────────────────────
+
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  closeBtn: { position: "absolute", right: 16, zIndex: 10, width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center" },
+  closeBtn: {
+    position: "absolute",
+    right: 16,
+    zIndex: 10,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   content: { paddingHorizontal: 20, gap: 18, alignItems: "center" },
-  alreadyWrap: { flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 32, gap: 16 },
+  subscribedWrap: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 32,
+    gap: 16,
+  },
 
-  heroBadge: { width: 72, height: 72, borderRadius: 22, alignItems: "center", justifyContent: "center", marginBottom: 4 },
-  heroTitle: { fontSize: 28, fontFamily: "Inter_700Bold", letterSpacing: -0.8, textAlign: "center" },
+  heroBadge: {
+    width: 72,
+    height: 72,
+    borderRadius: 22,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 4,
+  },
+  heroTitle: {
+    fontSize: 28,
+    fontFamily: "Inter_700Bold",
+    letterSpacing: -0.8,
+    textAlign: "center",
+  },
   heroAccent: { color: "#A855F7" },
-  heroSubtitle: { fontSize: 14, fontFamily: "Inter_400Regular", textAlign: "center", lineHeight: 20, marginBottom: 2 },
+  heroSubtitle: {
+    fontSize: 15,
+    fontFamily: "Inter_400Regular",
+    textAlign: "center",
+    lineHeight: 22,
+  },
 
-  loadingWrap: { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 20 },
-  loadingText: { fontSize: 14, fontFamily: "Inter_400Regular" },
-  noPlansWrap: { flexDirection: "row", alignItems: "center", gap: 10, padding: 16, borderRadius: 14, borderWidth: 1, alignSelf: "stretch" },
-  noPlansText: { fontSize: 13, fontFamily: "Inter_400Regular", flex: 1 },
+  priceChip: {
+    flexDirection: "row",
+    alignItems: "baseline",
+    gap: 4,
+    paddingHorizontal: 18,
+    paddingVertical: 12,
+    borderRadius: 16,
+    borderWidth: 1,
+  },
+  priceChipAmount: { fontSize: 26, fontFamily: "Inter_700Bold" },
+  priceChipPer: { fontSize: 14, fontFamily: "Inter_400Regular" },
+  priceChipDot: {
+    width: 3,
+    height: 3,
+    borderRadius: 2,
+    backgroundColor: "#6366F1",
+    marginBottom: 4,
+    marginHorizontal: 4,
+  },
+  priceChipCancel: { fontSize: 13, fontFamily: "Inter_400Regular" },
 
-  planRow: { flexDirection: "row", gap: 10, alignSelf: "stretch" },
-  planCard: { flex: 1, alignItems: "center", paddingVertical: 14, paddingHorizontal: 6, borderRadius: 14, borderWidth: 1.5, gap: 2, position: "relative" },
-  planCardActive: { shadowColor: "#6366F1", shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.25, shadowRadius: 8, elevation: 4 },
-  noteBadge: { position: "absolute", top: -10, backgroundColor: "#10B981", paddingHorizontal: 7, paddingVertical: 2, borderRadius: 8 },
-  noteBadgeText: { color: "#FFFFFF", fontSize: 9, fontFamily: "Inter_700Bold" },
-  planLabel: { fontSize: 11, fontFamily: "Inter_600SemiBold" },
-  planPrice: { fontSize: 18, fontFamily: "Inter_700Bold", marginTop: 2 },
-  planPer: { fontSize: 10, fontFamily: "Inter_400Regular" },
-  planSubtext: { fontSize: 9, fontFamily: "Inter_400Regular", textAlign: "center" },
-  checkDot: { position: "absolute", top: 8, right: 8, width: 16, height: 16, borderRadius: 8, backgroundColor: "#6366F1", alignItems: "center", justifyContent: "center" },
-
-  section: { alignSelf: "stretch", borderRadius: 14, borderWidth: 1, padding: 14, gap: 10 },
-  sectionHeader: { flexDirection: "row", alignItems: "center", gap: 10, alignSelf: "stretch" },
+  sectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    alignSelf: "stretch",
+  },
   sectionTitle: { fontSize: 14, fontFamily: "Inter_600SemiBold" },
-  tierBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
-  tierBadgeText: { fontSize: 10, fontFamily: "Inter_700Bold", letterSpacing: 0.5 },
-  tierBadgePremium: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
-  tierBadgeTextPremium: { color: "#FFFFFF", fontSize: 10, fontFamily: "Inter_700Bold", letterSpacing: 0.5 },
-  tierBadgeAI: { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
-  tierBadgeAIText: { fontSize: 10, fontFamily: "Inter_700Bold", letterSpacing: 0.5 },
+  premiumBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
+  premiumBadgeText: {
+    color: "#FFFFFF",
+    fontSize: 10,
+    fontFamily: "Inter_700Bold",
+    letterSpacing: 0.5,
+  },
+  freeBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
+  freeBadgeText: { fontSize: 10, fontFamily: "Inter_700Bold", letterSpacing: 0.5 },
 
-  simpleRow: { flexDirection: "row", alignItems: "center", gap: 10 },
-  simpleText: { fontSize: 13, fontFamily: "Inter_400Regular", flex: 1 },
-
-  featuresList: { alignSelf: "stretch", borderRadius: 14, borderWidth: 1, overflow: "hidden" },
-  featureRow: { flexDirection: "row", alignItems: "center", gap: 12, padding: 14, borderBottomWidth: 1 },
+  featuresList: {
+    alignSelf: "stretch",
+    borderRadius: 16,
+    borderWidth: 1,
+    overflow: "hidden",
+  },
+  featureRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    padding: 14,
+    borderBottomWidth: 1,
+  },
   featureRowLast: { borderBottomWidth: 0 },
-  featureIcon: { width: 40, height: 40, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  featureIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 13,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   featureText: { flex: 1, gap: 2 },
   featureTitle: { fontSize: 14, fontFamily: "Inter_600SemiBold" },
   featureDesc: { fontSize: 12, fontFamily: "Inter_400Regular", lineHeight: 17 },
 
-  ctaWrap: { alignSelf: "stretch" },
-  ctaBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, paddingVertical: 18, borderRadius: 16, minHeight: 58 },
-  ctaBtnText: { color: "#FFFFFF", fontSize: 15, fontFamily: "Inter_700Bold" },
+  freeList: {
+    alignSelf: "stretch",
+    borderRadius: 16,
+    borderWidth: 1,
+    overflow: "hidden",
+  },
+  freeRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+  },
+  freeText: { fontSize: 13, fontFamily: "Inter_400Regular", flex: 1 },
 
-  legalText: { fontSize: 11, fontFamily: "Inter_400Regular", textAlign: "center", lineHeight: 17, marginTop: -6 },
+  ctaWrap: { alignSelf: "stretch", marginTop: 4 },
+  ctaBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingVertical: 18,
+    borderRadius: 16,
+    minHeight: 58,
+  },
+  ctaBtnText: { color: "#FFFFFF", fontSize: 16, fontFamily: "Inter_700Bold" },
+
+  legalText: {
+    fontSize: 11,
+    fontFamily: "Inter_400Regular",
+    textAlign: "center",
+    lineHeight: 17,
+    marginTop: -4,
+  },
   restoreBtn: { paddingVertical: 8 },
-  restoreText: { fontSize: 13, fontFamily: "Inter_400Regular", textDecorationLine: "underline" },
+  restoreText: {
+    fontSize: 13,
+    fontFamily: "Inter_400Regular",
+    textDecorationLine: "underline",
+  },
 });

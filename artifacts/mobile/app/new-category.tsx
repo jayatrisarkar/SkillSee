@@ -14,21 +14,33 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { AVAILABLE_COLORS, IconPicker } from "@/components/IconPicker";
+import { UpgradeModal } from "@/components/UpgradeModal";
 import { useLibrary } from "@/context/LibraryContext";
 import { useColors } from "@/hooks/useColors";
+import { useSubscription } from "@/lib/revenuecat";
+
+export const FREE_CATEGORY_LIMIT = 10;
 
 export default function NewCategoryScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { addCategory } = useLibrary();
+  const { addCategory, categories } = useLibrary();
+  const { isSubscribed } = useSubscription();
 
   const [name, setName] = useState("");
   const [icon, setIcon] = useState("book-outline");
   const [color, setColor] = useState(AVAILABLE_COLORS[0]);
+  const [showUpgrade, setShowUpgrade] = useState(false);
+
+  const atLimit = !isSubscribed && categories.length >= FREE_CATEGORY_LIMIT;
 
   function handleCreate() {
     if (!name.trim()) return;
+    if (atLimit) {
+      setShowUpgrade(true);
+      return;
+    }
     addCategory(name.trim(), icon, color);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     router.back();
@@ -36,6 +48,11 @@ export default function NewCategoryScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <UpgradeModal
+        visible={showUpgrade}
+        onDismiss={() => setShowUpgrade(false)}
+      />
+
       <View style={[styles.header, { borderBottomColor: colors.border }]}>
         <TouchableOpacity onPress={() => router.back()}>
           <Text style={[styles.cancelText, { color: colors.mutedForeground }]}>Cancel</Text>
@@ -51,6 +68,28 @@ export default function NewCategoryScreen() {
           </Text>
         </TouchableOpacity>
       </View>
+
+      {/* Free limit banner */}
+      {!isSubscribed && (
+        <TouchableOpacity
+          style={[styles.limitBanner, { backgroundColor: colors.card, borderColor: colors.border }]}
+          onPress={() => router.push("/premium")}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="albums-outline" size={15} color="#6366F1" />
+          <Text style={[styles.limitBannerText, { color: colors.mutedForeground }]}>
+            {categories.length}/{FREE_CATEGORY_LIMIT} categories used
+          </Text>
+          {atLimit && (
+            <View style={styles.limitBadge}>
+              <Text style={styles.limitBadgeText}>Limit reached · Upgrade</Text>
+            </View>
+          )}
+          {!atLimit && (
+            <Text style={[styles.limitLink, { color: "#6366F1" }]}>Go Premium →</Text>
+          )}
+        </TouchableOpacity>
+      )}
 
       <ScrollView
         contentContainerStyle={[styles.form, { paddingBottom: Platform.OS === "web" ? 34 : insets.bottom + 24 }]}
@@ -100,12 +139,27 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   createBtnText: { fontSize: 15, fontFamily: "Inter_600SemiBold" },
-  form: { padding: 20, gap: 24 },
-  preview: {
+
+  limitBanner: {
+    flexDirection: "row",
     alignItems: "center",
-    gap: 16,
-    paddingBottom: 8,
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
   },
+  limitBannerText: { fontSize: 13, fontFamily: "Inter_400Regular", flex: 1 },
+  limitBadge: {
+    backgroundColor: "#6366F115",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+  },
+  limitBadgeText: { fontSize: 11, fontFamily: "Inter_600SemiBold", color: "#6366F1" },
+  limitLink: { fontSize: 13, fontFamily: "Inter_600SemiBold" },
+
+  form: { padding: 20, gap: 24 },
+  preview: { alignItems: "center", gap: 16, paddingBottom: 8 },
   previewIcon: {
     width: 88,
     height: 88,
