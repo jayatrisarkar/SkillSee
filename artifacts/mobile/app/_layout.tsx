@@ -21,8 +21,15 @@ import { ThemeProvider } from "@/context/ThemeContext";
 import { LibraryProvider } from "@/context/LibraryContext";
 import { ProfileProvider } from "@/context/ProfileContext";
 import { ClerkBridge } from "@/context/AuthContext";
+import { initializeRevenueCat, SubscriptionProvider } from "@/lib/revenuecat";
 
 SplashScreen.preventAutoHideAsync();
+
+try {
+  initializeRevenueCat();
+} catch (err: any) {
+  console.warn("[RevenueCat] Init skipped:", err?.message ?? err);
+}
 
 const queryClient = new QueryClient();
 
@@ -95,13 +102,15 @@ export default function RootLayout() {
             <QueryClientProvider client={queryClient}>
               <GestureHandlerRootView style={{ flex: 1 }}>
                 <ClerkBridge />
-                <KeyboardProvider>
-                  <ProfileProvider>
-                    <LibraryProvider>
-                      <RootLayoutNav />
-                    </LibraryProvider>
-                  </ProfileProvider>
-                </KeyboardProvider>
+                <SubscriptionProvider>
+                  <KeyboardProvider>
+                    <ProfileProvider>
+                      <LibraryProvider>
+                        <RootLayoutNav />
+                      </LibraryProvider>
+                    </ProfileProvider>
+                  </KeyboardProvider>
+                </SubscriptionProvider>
               </GestureHandlerRootView>
             </QueryClientProvider>
           </ErrorBoundary>
