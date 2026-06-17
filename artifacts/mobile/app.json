@@ -73,10 +73,7 @@
       [
         "expo-share-intent",
         {
-          "iosActivationRules": {
-            "NSExtensionActivationSupportsWebURLWithMaxCount": 1,
-            "NSExtensionActivationSupportsWebPageWithMaxCount": 1
-          },
+          "disableIOS": true,
           "androidIntentFilters": ["text/*"],
           "androidMainActivityAttributes": {
             "android:launchMode": "singleTask"
