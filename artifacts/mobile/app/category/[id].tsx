@@ -177,16 +177,13 @@ export default function CategoryScreen() {
           <View>
             <View style={[styles.catHeader, { paddingTop: topInset + 12 }]}>
               <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-                <Ionicons name="chevron-back" size={24} color={colors.foreground} />
+                <Ionicons name="chevron-back" size={22} color={colors.foreground} />
               </TouchableOpacity>
               <View style={[styles.catIconBig, { backgroundColor: category.color + "22" }]}>
-                <Ionicons name={category.icon as any} size={28} color={category.color} />
+                <Ionicons name={category.icon as any} size={22} color={category.color} />
               </View>
               <Text
                 style={[styles.catTitle, { color: colors.foreground }]}
-                numberOfLines={1}
-                adjustsFontSizeToFit
-                minimumFontScale={0.7}
               >
                 {category.name}
               </Text>
@@ -198,7 +195,7 @@ export default function CategoryScreen() {
                 >
                   <Ionicons
                     name={shareCopied ? "checkmark" : "share-outline"}
-                    size={18}
+                    size={15}
                     color={shareCopied ? "#10B981" : colors.mutedForeground}
                   />
                 </TouchableOpacity>
@@ -206,13 +203,13 @@ export default function CategoryScreen() {
                   onPress={() => setIsEditing(true)}
                   style={[styles.catActionBtn, { backgroundColor: colors.secondary }]}
                 >
-                  <Ionicons name="pencil-outline" size={18} color={colors.mutedForeground} />
+                  <Ionicons name="pencil-outline" size={15} color={colors.mutedForeground} />
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={() => router.push(`/add?categoryId=${category.id}`)}
                   style={[styles.catActionBtn, { backgroundColor: category.color + "22" }]}
                 >
-                  <Ionicons name="add" size={20} color={category.color} />
+                  <Ionicons name="add" size={17} color={category.color} />
                 </TouchableOpacity>
               </View>
             </View>
@@ -312,31 +309,31 @@ const styles = StyleSheet.create({
   catHeader: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
+    gap: 10,
     paddingBottom: 16,
   },
   backBtn: { padding: 4 },
   catIconBig: {
-    width: 48,
-    height: 48,
-    borderRadius: 13,
+    width: 38,
+    height: 38,
+    borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
   },
   catTitle: {
     flex: 1,
-    fontSize: 22,
+    fontSize: 20,
     fontFamily: "Inter_700Bold",
     letterSpacing: -0.3,
   },
   catActions: {
     flexDirection: "row",
-    gap: 8,
+    gap: 6,
   },
   catActionBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
+    width: 30,
+    height: 30,
+    borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
   },
