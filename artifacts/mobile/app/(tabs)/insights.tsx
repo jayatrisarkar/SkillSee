@@ -93,9 +93,9 @@ export default function InsightsScreen() {
           <Text style={[styles.screenTitle, { color: colors.foreground }]}>Insights</Text>
           <Text style={[styles.screenSub, { color: colors.mutedForeground }]}>Your learning overview</Text>
         </View>
-        <View style={[styles.streakBadge, { backgroundColor: "#EF444422", borderColor: "#EF444444" }]}>
-          <Ionicons name="flame" size={16} color="#EF4444" />
-          <Text style={styles.streakText}>{stats.streak}d streak</Text>
+        <View style={[styles.streakBadge, { backgroundColor: "#EF444415" }]}>
+          <Ionicons name="flame" size={15} color="#EF4444" />
+          <Text style={styles.streakText}>{stats.streak}d</Text>
         </View>
       </View>
 
@@ -260,18 +260,16 @@ const styles = StyleSheet.create({
   streakBadge: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 5,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
+    gap: 4,
+    paddingHorizontal: 11,
+    paddingVertical: 6,
     borderRadius: 20,
-    borderWidth: 1,
   },
   streakText: { fontSize: 13, fontFamily: "Inter_700Bold", color: "#EF4444" },
   statsRow: { flexDirection: "row", gap: 10 },
   statCard: {
     flex: 1,
-    borderRadius: 14,
-    borderWidth: 1,
+    borderRadius: 16,
     padding: 14,
     gap: 8,
     alignItems: "flex-start",
@@ -281,11 +279,10 @@ const styles = StyleSheet.create({
   statLabel: { fontSize: 11, fontFamily: "Inter_500Medium" },
   sectionCard: {
     borderRadius: 16,
-    borderWidth: 1,
     padding: 16,
     gap: 12,
   },
-  sectionTitle: { fontSize: 16, fontFamily: "Inter_600SemiBold" },
+  sectionTitle: { fontSize: 15, fontFamily: "Inter_600SemiBold" },
   completionRow: { flexDirection: "row", alignItems: "center", gap: 20 },
   completionStats: { flex: 1, gap: 10 },
   completionStat: { gap: 2 },

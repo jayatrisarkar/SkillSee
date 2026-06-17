@@ -96,20 +96,20 @@ export default function LibraryScreen() {
 
         {/* ── Quick Stats ── */}
         <View style={styles.quickStats}>
-          <View style={[styles.quickStatPill, { backgroundColor: "#EF444415", borderColor: "#EF444430" }]}>
-            <Ionicons name="flame" size={14} color="#EF4444" />
+          <View style={[styles.quickStatPill, { backgroundColor: "#EF444412" }]}>
+            <Ionicons name="flame" size={13} color="#EF4444" />
             <Text style={[styles.quickStatText, { color: "#EF4444" }]}>
               {stats.streak}d streak
             </Text>
           </View>
-          <View style={[styles.quickStatPill, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
-            <Ionicons name="bookmark-outline" size={14} color={colors.mutedForeground} />
+          <View style={[styles.quickStatPill, { backgroundColor: colors.secondary }]}>
+            <Ionicons name="bookmark-outline" size={13} color={colors.mutedForeground} />
             <Text style={[styles.quickStatText, { color: colors.mutedForeground }]}>
               {stats.savesThisWeek} this week
             </Text>
           </View>
-          <View style={[styles.quickStatPill, { backgroundColor: "#10B98115", borderColor: "#10B98130" }]}>
-            <Ionicons name="checkmark-circle-outline" size={14} color="#10B981" />
+          <View style={[styles.quickStatPill, { backgroundColor: "#10B98112" }]}>
+            <Ionicons name="checkmark-circle-outline" size={13} color="#10B981" />
             <Text style={[styles.quickStatText, { color: "#10B981" }]}>
               {stats.totalCompleted} done
             </Text>
@@ -119,17 +119,18 @@ export default function LibraryScreen() {
         {/* ── AI Insight ── */}
         {topInsight && (
           <TouchableOpacity
-            style={[styles.insightBanner, { backgroundColor: colors.card, borderColor: colors.primary + "44" }]}
+            style={[styles.insightBanner, { backgroundColor: colors.card }]}
             onPress={() => router.push("/(tabs)/insights")}
             activeOpacity={0.85}
           >
+            <View style={[styles.insightAccent, { backgroundColor: colors.primary }]} />
             <View style={[styles.insightIconWrap, { backgroundColor: colors.primary + "18" }]}>
-              <Ionicons name="bulb-outline" size={20} color={colors.primary} />
+              <Ionicons name="bulb-outline" size={18} color={colors.primary} />
             </View>
             <Text style={[styles.insightBannerText, { color: colors.foreground }]} numberOfLines={2}>
               {topInsight}
             </Text>
-            <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
+            <Ionicons name="chevron-forward" size={15} color={colors.mutedForeground} />
           </TouchableOpacity>
         )}
 
@@ -137,7 +138,7 @@ export default function LibraryScreen() {
         {inProgressItems.length > 0 && (
           <View>
             <View style={styles.rowHeader}>
-              <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>CONTINUE LEARNING</Text>
+              <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>Continue learning</Text>
             </View>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.inProgressRow}>
               {inProgressItems.map((item) => {
@@ -168,7 +169,7 @@ export default function LibraryScreen() {
 
         {/* ── Categories ── */}
         <View style={styles.rowHeader}>
-          <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>CATEGORIES</Text>
+          <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>Categories</Text>
           <TouchableOpacity onPress={() => router.push("/(tabs)/categories")}>
             <Text style={[styles.seeAll, { color: colors.primary }]}>Manage</Text>
           </TouchableOpacity>
@@ -229,35 +230,42 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 5,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
+    paddingHorizontal: 11,
+    paddingVertical: 6,
     borderRadius: 20,
-    borderWidth: 1,
   },
-  quickStatText: { fontSize: 13, fontFamily: "Inter_600SemiBold" },
+  quickStatText: { fontSize: 12, fontFamily: "Inter_600SemiBold" },
   insightBanner: {
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
     padding: 14,
-    borderRadius: 14,
-    borderWidth: 1,
+    borderRadius: 16,
+    overflow: "hidden",
+  },
+  insightAccent: {
+    position: "absolute",
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 3,
+    borderRadius: 2,
   },
   insightIconWrap: {
-    width: 36,
-    height: 36,
+    width: 34,
+    height: 34,
     borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
   },
-  insightBannerText: { flex: 1, fontSize: 14, fontFamily: "Inter_500Medium", lineHeight: 20 },
+  insightBannerText: { flex: 1, fontSize: 13, fontFamily: "Inter_500Medium", lineHeight: 19 },
   rowHeader: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 4,
+    marginBottom: 8,
   },
-  sectionLabel: { fontSize: 11, fontFamily: "Inter_600SemiBold", letterSpacing: 1 },
+  sectionLabel: { fontSize: 12, fontFamily: "Inter_600SemiBold", letterSpacing: 0.2 },
   seeAll: { fontSize: 13, fontFamily: "Inter_500Medium" },
   inProgressRow: { gap: 12, paddingVertical: 4 },
   inProgressCard: {

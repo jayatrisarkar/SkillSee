@@ -218,7 +218,7 @@ export default function ProfileScreen() {
       <Text style={[styles.screenTitle, { color: colors.foreground }]}>Profile</Text>
 
       {/* ── Profile Card ── */}
-      <View style={[styles.profileCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+      <View style={[styles.profileCard, { backgroundColor: colors.card }]}>
         <TouchableOpacity style={styles.avatarWrap} onPress={pickAvatar} activeOpacity={0.8}>
           {profile.avatarUri ? (
             <Image source={{ uri: profile.avatarUri }} style={styles.avatar} />
@@ -246,7 +246,7 @@ export default function ProfileScreen() {
       </View>
 
       {/* ── Stats ── */}
-      <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>STATISTICS</Text>
+      <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>Statistics</Text>
       <View style={styles.statsGrid}>
         <StatBubble value={String(stats.totalSaved)} label="Total Saves" />
         <StatBubble value={String(stats.totalCompleted)} label="Completed" />
@@ -258,7 +258,7 @@ export default function ProfileScreen() {
 
       {/* ── Achievements ── */}
       <View style={styles.achievementHeader}>
-        <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>ACHIEVEMENTS</Text>
+        <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>Achievements</Text>
         <Text style={[styles.earnedCount, { color: colors.primary }]}>{earnedCount}/{achievements.length}</Text>
       </View>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.badgeRow}>
@@ -268,7 +268,7 @@ export default function ProfileScreen() {
       </ScrollView>
 
       {/* ── Manage ── */}
-      <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>MANAGE</Text>
+      <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>Manage</Text>
       <View style={[styles.settingsGroup, { backgroundColor: colors.card, borderColor: colors.border }]}>
         {/* Appearance toggle */}
         <View style={[styles.themeSettingRow, { borderBottomColor: colors.border }]}>
@@ -336,7 +336,7 @@ export default function ProfileScreen() {
       </View>
 
       {/* ── Settings ── */}
-      <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>SETTINGS</Text>
+      <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>Settings</Text>
       <View style={[styles.settingsGroup, { backgroundColor: colors.card, borderColor: colors.border }]}>
         <View style={[styles.settingRow, { borderBottomColor: colors.border }]}>
           <View style={[styles.settingIconWrap, { backgroundColor: "#8B5CF622" }]}>
@@ -444,9 +444,8 @@ const styles = StyleSheet.create({
   content: { paddingHorizontal: 16, gap: 12 },
   screenTitle: { fontSize: 28, fontFamily: "Inter_700Bold", letterSpacing: -0.5, marginBottom: 4 },
   profileCard: {
-    borderRadius: 18,
-    borderWidth: 1,
-    padding: 20,
+    borderRadius: 20,
+    padding: 24,
     alignItems: "center",
     gap: 6,
   },
@@ -486,9 +485,9 @@ const styles = StyleSheet.create({
   },
   editBtnText: { fontSize: 13, fontFamily: "Inter_500Medium" },
   sectionLabel: {
-    fontSize: 11,
+    fontSize: 12,
     fontFamily: "Inter_600SemiBold",
-    letterSpacing: 1,
+    letterSpacing: 0.2,
     marginTop: 6,
     marginBottom: -2,
   },

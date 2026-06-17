@@ -76,7 +76,7 @@ export default function SearchScreen() {
       <View
         style={[
           styles.header,
-          { paddingTop: topInset + 12, backgroundColor: colors.background, borderBottomColor: colors.border },
+          { paddingTop: topInset + 12, backgroundColor: colors.background, borderBottomColor: colors.border + "80" },
         ]}
       >
         <Text style={[styles.screenTitle, { color: colors.foreground }]}>Search</Text>
