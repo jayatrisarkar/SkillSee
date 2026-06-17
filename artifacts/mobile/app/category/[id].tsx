@@ -48,21 +48,48 @@ export default function CategoryScreen() {
     const allItems = items.filter((it) => it.categoryId === category.id && !it.isArchived);
     if (allItems.length === 0) return;
 
-    const data = {
-      n: category.name,
-      i: category.icon,
-      c: category.color,
-      items: allItems.map((it) => ({ t: it.title, u: it.url })),
-    };
-
-    const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(data))));
-
+    const domain = process.env.EXPO_PUBLIC_DOMAIN ?? "";
     const origin =
       Platform.OS === "web"
         ? window.location.origin
-        : `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
+        : domain ? `https://${domain}` : "https://skillsee.replit.app";
+    const apiBase = domain ? `https://${domain}/api` : "/api";
 
-    const playlistUrl = `${origin}/playlist?d=${encoded}`;
+    let playlistUrl: string;
+
+    try {
+      const res = await fetch(`${apiBase}/playlist`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: category.name,
+          icon: category.icon,
+          color: category.color,
+          items: allItems.map((it) => ({ t: it.title, u: it.url })),
+        }),
+      });
+      if (!res.ok) throw new Error("api error");
+      const { id } = await res.json();
+      playlistUrl = `${origin}/playlist?id=${id}`;
+    } catch {
+      const data = {
+        n: category.name,
+        i: category.icon,
+        c: category.color,
+        items: allItems.map((it) => ({ t: it.title, u: it.url })),
+      };
+      const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(data))));
+      playlistUrl = `${origin}/playlist?d=${encoded}`;
+    }
+
+    const videoList = allItems
+      .map((it, idx) => `${idx + 1}. ${it.title}\n   ${it.url}`)
+      .join("\n");
+    const shareMessage =
+      `${category.name} playlist — ${allItems.length} ${allItems.length === 1 ? "resource" : "resources"}\n\n` +
+      `${videoList}\n\n` +
+      `View full playlist: ${playlistUrl}\n\n` +
+      `Get SkillSee: ${origin}`;
 
     try {
       if (Platform.OS === "web") {
@@ -81,7 +108,7 @@ export default function CategoryScreen() {
         setTimeout(() => setShareCopied(false), 2500);
       } else {
         await Share.share({
-          message: `Check out my ${category.name} playlist on SkillSee 👇\n${playlistUrl}`,
+          message: shareMessage,
           url: playlistUrl,
           title: `${category.name} Playlist`,
         });
