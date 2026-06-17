@@ -78,6 +78,8 @@ const FREE_FEATURES = [
 
 // ── Screen ────────────────────────────────────────────────────────────────────
 
+type PlanKey = "monthly" | "yearly";
+
 export default function PremiumScreen() {
   const colors = useColors();
   const router = useRouter();
@@ -87,27 +89,37 @@ export default function PremiumScreen() {
   const { offerings, isSubscribed, purchase, restore, isPurchasing, isRestoring, isLoading } =
     useSubscription();
 
+  const [selectedPlan, setSelectedPlan] = useState<PlanKey>("yearly");
   const [confirmPkg, setConfirmPkg] = useState<PurchasesPackage | null>(null);
   const [successVisible, setSuccessVisible] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  // Use monthly package from RevenueCat, fall back to null (price shown from RC or hardcoded)
   const monthlyPkg = offerings?.current?.availablePackages.find(
     (p) => (p.identifier as string) === "$rc_monthly"
   ) ?? null;
 
-  const displayPrice = monthlyPkg?.product.priceString ?? "$1.99";
+  const yearlyPkg = offerings?.current?.availablePackages.find(
+    (p) => (p.identifier as string) === "$rc_annual"
+  ) ?? null;
+
+  const activePkg = selectedPlan === "yearly" ? yearlyPkg : monthlyPkg;
+  const monthlyPrice = monthlyPkg?.product.priceString ?? "$1.99";
+  const yearlyPrice = yearlyPkg?.product.priceString ?? "$14.99";
+  const ctaLabel =
+    selectedPlan === "yearly"
+      ? `Upgrade for ${yearlyPrice}/year`
+      : `Upgrade for ${monthlyPrice}/month`;
 
   async function handlePurchase() {
-    if (!monthlyPkg) {
+    if (!activePkg) {
       setErrorMsg("Subscription not available right now. Please try again later.");
       return;
     }
     if (__DEV__) {
-      setConfirmPkg(monthlyPkg);
+      setConfirmPkg(activePkg);
       return;
     }
-    await doPurchase(monthlyPkg);
+    await doPurchase(activePkg);
   }
 
   async function doPurchase(pkg: PurchasesPackage) {
@@ -183,7 +195,7 @@ export default function PremiumScreen() {
       <ConfirmModal
         visible={!!confirmPkg}
         title="Test Purchase"
-        message={`Simulate buying:\n\n${confirmPkg?.product.title ?? "Premium Monthly"} — ${confirmPkg?.product.priceString ?? displayPrice}/month`}
+        message={`Simulate buying:\n\n${confirmPkg?.product.title ?? "Premium"} — ${confirmPkg?.product.priceString ?? (selectedPlan === "yearly" ? yearlyPrice : monthlyPrice)}`}
         actions={[
           {
             label: "Confirm Purchase",
@@ -256,14 +268,61 @@ export default function PremiumScreen() {
           Organize your learning without limits.
         </Text>
 
-        {/* Price chip */}
-        <View style={[styles.priceChip, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Text style={[styles.priceChipAmount, { color: colors.foreground }]}>
-            {isLoading ? "—" : displayPrice}
-          </Text>
-          <Text style={[styles.priceChipPer, { color: colors.mutedForeground }]}>/month</Text>
-          <View style={styles.priceChipDot} />
-          <Text style={[styles.priceChipCancel, { color: colors.mutedForeground }]}>Cancel anytime</Text>
+        {/* Plan selector */}
+        <View style={[styles.planSelector, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          {/* Yearly option */}
+          <TouchableOpacity
+            onPress={() => setSelectedPlan("yearly")}
+            activeOpacity={0.8}
+            style={[
+              styles.planOption,
+              selectedPlan === "yearly" && styles.planOptionActive,
+              selectedPlan === "yearly" && { borderColor: "#6366F1" },
+            ]}
+          >
+            <View style={styles.planTopRow}>
+              <View style={styles.planRadioWrap}>
+                <View style={[styles.planRadioOuter, { borderColor: selectedPlan === "yearly" ? "#6366F1" : colors.mutedForeground }]}>
+                  {selectedPlan === "yearly" && <View style={styles.planRadioInner} />}
+                </View>
+                <Text style={[styles.planLabel, { color: colors.foreground }]}>Yearly</Text>
+              </View>
+              <View style={styles.saveBadge}>
+                <Text style={styles.saveBadgeText}>Save 37%</Text>
+              </View>
+            </View>
+            <Text style={[styles.planPrice, { color: colors.foreground }]}>
+              {isLoading ? "—" : yearlyPrice}
+              <Text style={[styles.planPricePer, { color: colors.mutedForeground }]}>/year</Text>
+            </Text>
+            <Text style={[styles.planSub, { color: colors.mutedForeground }]}>
+              ~$1.25/month · Best value
+            </Text>
+          </TouchableOpacity>
+
+          <View style={[styles.planDivider, { backgroundColor: colors.border }]} />
+
+          {/* Monthly option */}
+          <TouchableOpacity
+            onPress={() => setSelectedPlan("monthly")}
+            activeOpacity={0.8}
+            style={[
+              styles.planOption,
+              selectedPlan === "monthly" && styles.planOptionActive,
+              selectedPlan === "monthly" && { borderColor: "#6366F1" },
+            ]}
+          >
+            <View style={styles.planRadioWrap}>
+              <View style={[styles.planRadioOuter, { borderColor: selectedPlan === "monthly" ? "#6366F1" : colors.mutedForeground }]}>
+                {selectedPlan === "monthly" && <View style={styles.planRadioInner} />}
+              </View>
+              <Text style={[styles.planLabel, { color: colors.foreground }]}>Monthly</Text>
+            </View>
+            <Text style={[styles.planPrice, { color: colors.foreground }]}>
+              {isLoading ? "—" : monthlyPrice}
+              <Text style={[styles.planPricePer, { color: colors.mutedForeground }]}>/month</Text>
+            </Text>
+          </TouchableOpacity>
         </View>
 
         {/* Premium features */}
@@ -344,7 +403,7 @@ export default function PremiumScreen() {
               <>
                 <Ionicons name="diamond-outline" size={18} color="#FFFFFF" />
                 <Text style={styles.ctaBtnText}>
-                  {isLoading ? "Loading…" : `Upgrade for ${displayPrice}/month`}
+                  {isLoading ? "Loading…" : ctaLabel}
                 </Text>
               </>
             )}
@@ -420,26 +479,64 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
 
-  priceChip: {
-    flexDirection: "row",
-    alignItems: "baseline",
-    gap: 4,
-    paddingHorizontal: 18,
-    paddingVertical: 12,
-    borderRadius: 16,
+  planSelector: {
+    alignSelf: "stretch",
+    borderRadius: 18,
     borderWidth: 1,
+    overflow: "hidden",
   },
-  priceChipAmount: { fontSize: 26, fontFamily: "Inter_700Bold" },
-  priceChipPer: { fontSize: 14, fontFamily: "Inter_400Regular" },
-  priceChipDot: {
-    width: 3,
-    height: 3,
-    borderRadius: 2,
+  planOption: {
+    padding: 16,
+    gap: 4,
+    borderWidth: 2,
+    borderColor: "transparent",
+    borderRadius: 16,
+    margin: 4,
+  },
+  planOptionActive: {
+    backgroundColor: "#6366F108",
+  },
+  planTopRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  planRadioWrap: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  planRadioOuter: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  planRadioInner: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
     backgroundColor: "#6366F1",
-    marginBottom: 4,
-    marginHorizontal: 4,
   },
-  priceChipCancel: { fontSize: 13, fontFamily: "Inter_400Regular" },
+  planLabel: { fontSize: 15, fontFamily: "Inter_600SemiBold" },
+  planPrice: { fontSize: 22, fontFamily: "Inter_700Bold", marginLeft: 30 },
+  planPricePer: { fontSize: 13, fontFamily: "Inter_400Regular" },
+  planSub: { fontSize: 12, fontFamily: "Inter_400Regular", marginLeft: 30 },
+  planDivider: { height: 1, marginHorizontal: 12 },
+  saveBadge: {
+    backgroundColor: "#10B981",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+  },
+  saveBadgeText: {
+    color: "#FFFFFF",
+    fontSize: 11,
+    fontFamily: "Inter_700Bold",
+    letterSpacing: 0.2,
+  },
 
   sectionHeader: {
     flexDirection: "row",
