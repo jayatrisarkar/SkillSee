@@ -1,0 +1,151 @@
+PRIVACY POLICY PAGE
+
+Title:
+Privacy Policy
+
+Last Updated:
+June 2026
+
+Content:
+
+Welcome to SkillSee.
+
+SkillSee respects your privacy and is committed to protecting your personal information.
+
+Information We Collect:
+
+Account information (name, email)
+Saved links and content
+Categories and notes
+App usage analytics
+Device information
+
+How We Use Information:
+
+Provide and improve SkillSee
+Synchronize saved content
+Personalize user experience
+Maintain security
+Provide support
+
+Data Storage:
+Your data may be stored securely on our servers.
+
+Third-Party Services:
+
+Authentication providers
+Analytics providers
+Payment processors
+Cloud storage providers
+
+User Rights:
+
+Edit account information
+Delete saved content
+Request account deletion
+Export available data
+
+Children's Privacy:
+SkillSee is not intended for children under 13.
+
+Changes:
+This policy may be updated periodically.
+
+Contact:
+support@skillsee.com
+
+TERMS OF SERVICE PAGE
+
+Title:
+Terms of Service
+
+Last Updated:
+June 2026
+
+Content:
+
+By using SkillSee, you agree to these Terms of Service.
+
+Service Description:
+SkillSee helps users save, organize, and manage educational content.
+
+User Accounts:
+Users are responsible for account security.
+
+Acceptable Use:
+Users may not:
+
+Violate laws
+Upload harmful content
+Attempt unauthorized access
+Disrupt services
+
+User Content:
+Users retain ownership of their saved content.
+
+Premium Subscription:
+Plans:
+
+$1.99/month
+$14.99/year
+
+Subscriptions automatically renew unless canceled.
+
+Service Availability:
+SkillSee does not guarantee uninterrupted service.
+
+Limitation of Liability:
+SkillSee is provided "as is".
+
+Termination:
+Accounts violating terms may be suspended or terminated.
+
+Changes:
+Terms may be updated periodically.
+
+Contact:
+support@skillsee.com
+
+CONTACT PAGE
+
+Title:
+Contact SkillSee
+
+Subtitle:
+We would love to hear from you.
+
+Cards:
+
+Support
+support@skillsee.com
+
+Business
+business@skillsee.com
+
+Feature Requests
+feedback@skillsee.com
+
+Response Time:
+24–48 hours
+
+FOOTER
+
+Add links:
+
+Privacy Policy
+Terms of Service
+Contact Us
+
+DESIGN REQUIREMENTS
+
+Match existing SkillSee website design
+Dark mode by default
+Neon purple and blue gradient accents
+Glassmorphism cards
+Mobile responsive
+Modern startup appearance
+Smooth animations
+Clean typography
+Consistent navigation across all pages
+
+Ensure all footer links work correctly and open the appropriate page.
