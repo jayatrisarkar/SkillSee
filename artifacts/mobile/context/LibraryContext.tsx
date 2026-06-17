@@ -8,6 +8,7 @@ import React, {
   useState,
 } from "react";
 import { getApiHeaders, isUserSignedIn, onAuthStateChange } from "./clerkBridge";
+import { getPendingImport, clearPendingImport } from "./pendingImport";
 
 export type ContentStatus = "none" | "learning" | "completed";
 
@@ -149,47 +150,8 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
     await AsyncStorage.setItem(ITEMS_KEY, JSON.stringify(its));
   }, []);
 
-  // ── Cloud sync ────────────────────────────────────────────────────────────
+  // ── Fire-and-forget cloud mutations ──────────────────────────────────────
 
-  const syncNow = useCallback(async () => {
-    if (!isSignedIn) return;
-    const headers = await getApiHeaders();
-    if (!headers.Authorization) return;
-    setIsSyncing(true);
-    try {
-      const res = await fetch(`${getApiBase()}/sync`, { headers });
-      if (!res.ok) return;
-      const { categories: cloudCats, items: cloudItems } = await res.json();
-      const localCats = (await AsyncStorage.getItem(CATEGORIES_KEY));
-      const localItemsRaw = (await AsyncStorage.getItem(ITEMS_KEY));
-
-      const localCatsArr: Category[] = localCats ? JSON.parse(localCats) : DEFAULT_CATEGORIES;
-      const localItemsArr: ContentItem[] = localItemsRaw ? JSON.parse(localItemsRaw) : [];
-
-      if (cloudCats.length === 0 && cloudItems.length === 0 && (localCatsArr.length > 0 || localItemsArr.length > 0)) {
-        // First sign-in — push local data to cloud
-        await fetch(`${getApiBase()}/sync`, {
-          method: "POST",
-          headers,
-          body: JSON.stringify({
-            categories: localCatsArr.map(localCategoryToApi),
-            items: localItemsArr.map(localItemToApi),
-          }),
-        });
-      } else if (cloudCats.length > 0 || cloudItems.length > 0) {
-        // Cloud has data — use it as source of truth
-        const mergedCats = cloudCats.map(apiCategoryToLocal);
-        const mergedItems = cloudItems.map(apiItemToLocal);
-        setCategories(mergedCats);
-        setItems(mergedItems);
-        await saveCategories(mergedCats);
-        await saveItems(mergedItems);
-      }
-    } catch {}
-    setIsSyncing(false);
-  }, [isSignedIn, getApiHeaders, saveCategories, saveItems]);
-
-  // Fire-and-forget: push a single mutation to the cloud
   const pushCategoryUpdate = useCallback(async (cat: Category, method: "POST" | "DELETE") => {
     if (!isSignedIn) return;
     try {
@@ -205,7 +167,7 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
         });
       }
     } catch {}
-  }, [isSignedIn, getApiHeaders]);
+  }, [isSignedIn]);
 
   const pushItemMutation = useCallback(async (item: ContentItem, method: "POST" | "DELETE", idx = 0) => {
     if (!isSignedIn) return;
@@ -222,36 +184,9 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
         });
       }
     } catch {}
-  }, [isSignedIn, getApiHeaders]);
+  }, [isSignedIn]);
 
-  // ── Initial load ──────────────────────────────────────────────────────────
-
-  useEffect(() => {
-    async function load() {
-      try {
-        const [catJson, itemJson] = await Promise.all([
-          AsyncStorage.getItem(CATEGORIES_KEY),
-          AsyncStorage.getItem(ITEMS_KEY),
-        ]);
-        if (catJson) setCategories(JSON.parse(catJson));
-        if (itemJson) setItems(JSON.parse(itemJson));
-      } catch {}
-      setIsLoaded(true);
-    }
-    load();
-  }, []);
-
-  // ── Sync when sign-in state changes ───────────────────────────────────────
-
-  useEffect(() => {
-    if (!isLoaded) return;
-    if (isSignedIn && prevSignedIn.current !== true) {
-      syncNow();
-    }
-    prevSignedIn.current = isSignedIn;
-  }, [isSignedIn, isLoaded, syncNow]);
-
-  // ── Mutations ─────────────────────────────────────────────────────────────
+  // ── Mutations (defined before syncNow so syncNow can call them) ───────────
 
   const addCategory = useCallback(
     (name: string, icon: string, color: string): Category => {
@@ -369,6 +304,95 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
     setCategories(DEFAULT_CATEGORIES);
     await AsyncStorage.setItem(CATEGORIES_KEY, JSON.stringify(DEFAULT_CATEGORIES));
   }, []);
+
+  // ── Cloud sync (defined after mutations so it can call addCategory/addItem) ─
+
+  const syncNow = useCallback(async () => {
+    if (!isSignedIn) return;
+    const headers = await getApiHeaders();
+    if (!headers.Authorization) return;
+    setIsSyncing(true);
+    try {
+      const res = await fetch(`${getApiBase()}/sync`, { headers });
+      if (!res.ok) return;
+      const { categories: cloudCats, items: cloudItems } = await res.json();
+      const localCats = (await AsyncStorage.getItem(CATEGORIES_KEY));
+      const localItemsRaw = (await AsyncStorage.getItem(ITEMS_KEY));
+
+      const localCatsArr: Category[] = localCats ? JSON.parse(localCats) : DEFAULT_CATEGORIES;
+      const localItemsArr: ContentItem[] = localItemsRaw ? JSON.parse(localItemsRaw) : [];
+
+      if (cloudCats.length === 0 && cloudItems.length === 0 && (localCatsArr.length > 0 || localItemsArr.length > 0)) {
+        // First sign-in — push local data to cloud
+        await fetch(`${getApiBase()}/sync`, {
+          method: "POST",
+          headers,
+          body: JSON.stringify({
+            categories: localCatsArr.map(localCategoryToApi),
+            items: localItemsArr.map(localItemToApi),
+          }),
+        });
+      } else if (cloudCats.length > 0 || cloudItems.length > 0) {
+        // Cloud has data — use it as source of truth
+        const mergedCats = cloudCats.map(apiCategoryToLocal);
+        const mergedItems = cloudItems.map(apiItemToLocal);
+        setCategories(mergedCats);
+        setItems(mergedItems);
+        await saveCategories(mergedCats);
+        await saveItems(mergedItems);
+      }
+
+      // After cloud is reconciled, execute any pending playlist import.
+      // Running here (not in a separate effect) prevents a race where a
+      // concurrent cloud pull could overwrite locally-inserted items.
+      const pending = await getPendingImport();
+      if (pending) {
+        await clearPendingImport();
+        for (const catData of pending.cats) {
+          const cat = addCategory(catData.name, catData.icon, catData.color);
+          for (const rawItem of catData.items) {
+            addItem({
+              title: rawItem.t,
+              url: rawItem.u,
+              notes: "",
+              categoryId: cat.id,
+              tags: [],
+              status: "none",
+              isArchived: false,
+            });
+          }
+        }
+      }
+    } catch {}
+    setIsSyncing(false);
+  }, [isSignedIn, saveCategories, saveItems, addCategory, addItem]);
+
+  // ── Initial load ──────────────────────────────────────────────────────────
+
+  useEffect(() => {
+    async function load() {
+      try {
+        const [catJson, itemJson] = await Promise.all([
+          AsyncStorage.getItem(CATEGORIES_KEY),
+          AsyncStorage.getItem(ITEMS_KEY),
+        ]);
+        if (catJson) setCategories(JSON.parse(catJson));
+        if (itemJson) setItems(JSON.parse(itemJson));
+      } catch {}
+      setIsLoaded(true);
+    }
+    load();
+  }, []);
+
+  // ── Sync when sign-in state changes ───────────────────────────────────────
+
+  useEffect(() => {
+    if (!isLoaded) return;
+    if (isSignedIn && prevSignedIn.current !== true) {
+      syncNow();
+    }
+    prevSignedIn.current = isSignedIn;
+  }, [isSignedIn, isLoaded, syncNow]);
 
   return (
     <LibraryContext.Provider

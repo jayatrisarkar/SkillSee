@@ -1,10 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { useLocalSearchParams } from "expo-router";
-import React, { useEffect, useMemo, useState } from "react";
+import { router, useLocalSearchParams } from "expo-router";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Linking,
-  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -12,6 +11,10 @@ import {
   View,
   ActivityIndicator,
 } from "react-native";
+
+import { useLibrary } from "@/context/LibraryContext";
+import { isUserSignedIn, onAuthStateChange } from "@/context/clerkBridge";
+import { setPendingImport } from "@/context/pendingImport";
 
 interface PlaylistItem { t: string; u: string }
 interface CatBlock { n: string; i: string; c: string; items: PlaylistItem[] }
@@ -49,8 +52,103 @@ function ItemRow({ item, index, color }: { item: PlaylistItem; index: number; co
   );
 }
 
-function DownloadBanner() {
-  if (Platform.OS !== "web") return null;
+function SavePlaylistButton({ data }: { data: PlaylistData }) {
+  const { addCategory, addItem } = useLibrary();
+  const [signedIn, setSignedIn] = useState(isUserSignedIn);
+  const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => onAuthStateChange(setSignedIn), []);
+
+  const doImport = useCallback(() => {
+    setSaving(true);
+    try {
+      if (data.type === "cat") {
+        const cat = addCategory(data.n, data.i ?? "folder-outline", data.c ?? "#6366F1");
+        for (const item of data.items) {
+          addItem({
+            title: item.t,
+            url: item.u,
+            notes: "",
+            categoryId: cat.id,
+            tags: [],
+            status: "none",
+            isArchived: false,
+          });
+        }
+      } else {
+        for (const block of data.cats) {
+          const cat = addCategory(block.n, block.i ?? "folder-outline", block.c ?? "#6366F1");
+          for (const item of block.items) {
+            addItem({
+              title: item.t,
+              url: item.u,
+              notes: "",
+              categoryId: cat.id,
+              tags: [],
+              status: "none",
+              isArchived: false,
+            });
+          }
+        }
+      }
+      setSaved(true);
+    } finally {
+      setSaving(false);
+    }
+  }, [data, addCategory, addItem]);
+
+  const handleSave = useCallback(async () => {
+    if (signedIn) {
+      doImport();
+      return;
+    }
+    const cats =
+      data.type === "cat"
+        ? [{ name: data.n, icon: data.i ?? "folder-outline", color: data.c ?? "#6366F1", items: data.items }]
+        : data.cats.map((b) => ({ name: b.n, icon: b.i ?? "folder-outline", color: b.c ?? "#6366F1", items: b.items }));
+    await setPendingImport({ cats });
+    router.push("/sign-in");
+  }, [signedIn, data, doImport]);
+
+  if (saved) {
+    return (
+      <View style={[styles.saveBtn, styles.saveBtnSuccess]}>
+        <Ionicons name="checkmark-circle" size={18} color="#10B981" />
+        <Text style={[styles.saveBtnText, { color: "#10B981" }]}>Saved to your library!</Text>
+      </View>
+    );
+  }
+
+  return (
+    <TouchableOpacity
+      style={styles.saveBtn}
+      onPress={handleSave}
+      activeOpacity={0.82}
+      disabled={saving}
+    >
+      <LinearGradient
+        colors={["#818CF8", "#6366F1", "#4338CA"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 0 }}
+        style={styles.saveBtnGradient}
+      >
+        {saving ? (
+          <ActivityIndicator color="#fff" size="small" />
+        ) : (
+          <>
+            <Ionicons name="bookmark" size={17} color="#fff" />
+            <Text style={styles.saveBtnText}>
+              {signedIn ? "Save to my library" : "Save to SkillSee"}
+            </Text>
+          </>
+        )}
+      </LinearGradient>
+    </TouchableOpacity>
+  );
+}
+
+function GetAppBanner() {
   return (
     <View style={styles.banner}>
       <View style={styles.bannerLeft}>
@@ -58,8 +156,8 @@ function DownloadBanner() {
           <Ionicons name="library" size={20} color="#818CF8" />
         </View>
         <View>
-          <Text style={styles.bannerTitle}>Save this playlist</Text>
-          <Text style={styles.bannerSub}>Organize your learning with SkillSee</Text>
+          <Text style={styles.bannerTitle}>Discover SkillSee</Text>
+          <Text style={styles.bannerSub}>Organize your learning, track your progress</Text>
         </View>
       </View>
       <TouchableOpacity
@@ -67,7 +165,7 @@ function DownloadBanner() {
         onPress={() => Linking.openURL(getAppUrl())}
         activeOpacity={0.82}
       >
-        <Text style={styles.bannerBtnText}>Get SkillSee</Text>
+        <Text style={styles.bannerBtnText}>Learn more</Text>
       </TouchableOpacity>
     </View>
   );
@@ -91,13 +189,14 @@ function PlaylistContent({ data }: { data: PlaylistData }) {
             {data.items.length} {data.items.length === 1 ? "resource" : "resources"}
           </Text>
         </LinearGradient>
+        <SavePlaylistButton data={data} />
         <View style={styles.listWrap}>
           <Text style={styles.listLabel}>Playlist</Text>
           {data.items.map((item, i) => (
             <ItemRow key={i} item={item} index={i} color={color} />
           ))}
         </View>
-        <DownloadBanner />
+        <GetAppBanner />
         <Text style={styles.footer}>Made with SkillSee · Save. Learn. Master.</Text>
       </ScrollView>
     );
@@ -122,6 +221,8 @@ function PlaylistContent({ data }: { data: PlaylistData }) {
         </Text>
       </LinearGradient>
 
+      <SavePlaylistButton data={data} />
+
       {data.cats.map((cat, ci) => (
         <View key={ci} style={styles.catSection}>
           <View style={styles.catSectionHeader}>
@@ -137,7 +238,7 @@ function PlaylistContent({ data }: { data: PlaylistData }) {
         </View>
       ))}
 
-      <DownloadBanner />
+      <GetAppBanner />
       <Text style={styles.footer}>Made with SkillSee · Save. Learn. Master.</Text>
     </ScrollView>
   );
@@ -198,7 +299,6 @@ export default function PlaylistPage() {
           <Ionicons name="alert-circle-outline" size={48} color="#6366F1" />
           <Text style={styles.errorTitle}>Playlist not found</Text>
           <Text style={styles.errorSub}>This link may be invalid or expired.</Text>
-          <DownloadBanner />
         </View>
       );
     }
@@ -211,7 +311,6 @@ export default function PlaylistPage() {
         <Ionicons name="alert-circle-outline" size={48} color="#6366F1" />
         <Text style={styles.errorTitle}>Playlist not found</Text>
         <Text style={styles.errorSub}>This link may be invalid or expired.</Text>
-        <DownloadBanner />
       </View>
     );
   }
@@ -266,6 +365,36 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   catCount: { color: "#FFFFFFAA", fontSize: 14, fontWeight: "500" },
+
+  saveBtn: {
+    marginHorizontal: 20,
+    marginTop: 20,
+    borderRadius: 14,
+    overflow: "hidden",
+  },
+  saveBtnSuccess: {
+    backgroundColor: "#0C1018",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 16,
+    gap: 8,
+    borderRadius: 14,
+    overflow: "hidden",
+  },
+  saveBtnGradient: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 16,
+    gap: 8,
+  },
+  saveBtnText: {
+    color: "#FFFFFF",
+    fontSize: 15,
+    fontWeight: "700",
+    letterSpacing: 0.1,
+  },
 
   listWrap: { padding: 20, gap: 8 },
   listLabel: {
@@ -351,13 +480,13 @@ const styles = StyleSheet.create({
     marginTop: 1,
   },
   bannerBtn: {
-    backgroundColor: "#6366F1",
+    backgroundColor: "#6366F118",
     borderRadius: 10,
     paddingHorizontal: 14,
     paddingVertical: 9,
   },
   bannerBtnText: {
-    color: "#FFFFFF",
+    color: "#818CF8",
     fontSize: 13,
     fontWeight: "700",
   },
