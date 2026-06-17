@@ -50,6 +50,7 @@ A premium mobile app for saving videos and links, AI auto-categorizing content, 
 - Never use `useRouter` or any hook inside `tabBarButton` — use `import { router } from "expo-router"` (module-level singleton)
 - Never create `(tabs)/add.tsx` — it collides with `app/add.tsx` (the modal). The center tab placeholder is `(tabs)/new.tsx`
 - `Alert.alert` is blocked in Replit iframe — always use `ConfirmModal`
+- Never use `NativeTabLayout` / `expo-router/unstable-native-tabs` — it has no center add button and `isLiquidGlassAvailable()` returns true on modern iOS, silently hiding the + button. Always use `ClassicTabLayout` (has BlurView glass on iOS anyway)
 
 ## Pointers
 
