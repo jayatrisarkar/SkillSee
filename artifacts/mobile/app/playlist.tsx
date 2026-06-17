@@ -4,6 +4,8 @@ import { router, useLocalSearchParams } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Linking,
+  Modal,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -12,7 +14,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 
-import { useLibrary } from "@/context/LibraryContext";
+import { Category, useLibrary } from "@/context/LibraryContext";
 import { isUserSignedIn, onAuthStateChange } from "@/context/clerkBridge";
 import { setPendingImport } from "@/context/pendingImport";
 import { useToast } from "@/context/ToastContext";
@@ -53,27 +55,121 @@ function ItemRow({ item, index, color }: { item: PlaylistItem; index: number; co
   );
 }
 
+function CategoryPickerSheet({
+  visible,
+  categories,
+  playlistName,
+  playlistColor,
+  onClose,
+  onSelect,
+}: {
+  visible: boolean;
+  categories: Category[];
+  playlistName: string;
+  playlistColor: string;
+  onClose: () => void;
+  onSelect: (categoryId: string | null) => void;
+}) {
+  return (
+    <Modal
+      visible={visible}
+      transparent
+      animationType="slide"
+      onRequestClose={onClose}
+    >
+      <Pressable style={styles.sheetOverlay} onPress={onClose}>
+        <Pressable style={styles.sheetContainer} onPress={() => {}}>
+          <View style={styles.sheetHandle} />
+          <Text style={styles.sheetTitle}>Save to…</Text>
+          <Text style={styles.sheetSub}>
+            Pick an existing category or create a new one for "{playlistName}"
+          </Text>
+
+          <TouchableOpacity
+            style={styles.sheetNewRow}
+            onPress={() => onSelect(null)}
+            activeOpacity={0.75}
+          >
+            <LinearGradient
+              colors={[playlistColor + "30", playlistColor + "18"]}
+              style={styles.sheetNewIcon}
+            >
+              <Ionicons name="add" size={20} color={playlistColor} />
+            </LinearGradient>
+            <View style={styles.sheetRowBody}>
+              <Text style={[styles.sheetRowName, { color: playlistColor }]}>
+                Create new category
+              </Text>
+              <Text style={styles.sheetRowMeta}>Named "{playlistName}"</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={16} color={playlistColor} />
+          </TouchableOpacity>
+
+          {categories.length > 0 && (
+            <View style={styles.sheetDivider}>
+              <View style={styles.sheetDividerLine} />
+              <Text style={styles.sheetDividerLabel}>OR ADD TO EXISTING</Text>
+              <View style={styles.sheetDividerLine} />
+            </View>
+          )}
+
+          <ScrollView
+            style={styles.sheetList}
+            contentContainerStyle={styles.sheetListContent}
+            showsVerticalScrollIndicator={false}
+          >
+            {categories.map((cat) => (
+              <TouchableOpacity
+                key={cat.id}
+                style={styles.sheetCatRow}
+                onPress={() => onSelect(cat.id)}
+                activeOpacity={0.75}
+              >
+                <View style={[styles.sheetCatIcon, { backgroundColor: cat.color + "25" }]}>
+                  <Ionicons name={(cat.icon as any) ?? "folder-outline"} size={18} color={cat.color} />
+                </View>
+                <Text style={styles.sheetRowName} numberOfLines={1}>{cat.name}</Text>
+                <Ionicons name="chevron-forward" size={16} color="#3A4560" />
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </Pressable>
+      </Pressable>
+    </Modal>
+  );
+}
+
 function SavePlaylistButton({ data }: { data: PlaylistData }) {
-  const { addCategory, addItem } = useLibrary();
+  const { addCategory, addItem, categories } = useLibrary();
   const { showToast } = useToast();
   const [signedIn, setSignedIn] = useState(isUserSignedIn);
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [showPicker, setShowPicker] = useState(false);
 
   useEffect(() => onAuthStateChange(setSignedIn), []);
 
-  const doImport = useCallback(() => {
+  const doImport = useCallback((targetCategoryId?: string | null) => {
     setSaving(true);
     try {
       let totalItems = 0;
       if (data.type === "cat") {
-        const cat = addCategory(data.n, data.i ?? "folder-outline", data.c ?? "#6366F1");
+        let catId: string;
+        let destName: string;
+        if (targetCategoryId) {
+          catId = targetCategoryId;
+          destName = categories.find((c) => c.id === targetCategoryId)?.name ?? data.n;
+        } else {
+          const cat = addCategory(data.n, data.i ?? "folder-outline", data.c ?? "#6366F1");
+          catId = cat.id;
+          destName = data.n;
+        }
         for (const item of data.items) {
           addItem({
             title: item.t,
             url: item.u,
             notes: "",
-            categoryId: cat.id,
+            categoryId: catId,
             tags: [],
             status: "none",
             isArchived: false,
@@ -81,7 +177,7 @@ function SavePlaylistButton({ data }: { data: PlaylistData }) {
           totalItems++;
         }
         const itemWord = totalItems === 1 ? "item" : "items";
-        showToast(`${totalItems} ${itemWord} added to ${data.n}`);
+        showToast(`${totalItems} ${itemWord} added to ${destName}`);
       } else {
         const catCount = data.cats.length;
         const firstName = data.cats[0]?.n ?? "your library";
@@ -108,20 +204,29 @@ function SavePlaylistButton({ data }: { data: PlaylistData }) {
     } finally {
       setSaving(false);
     }
-  }, [data, addCategory, addItem, showToast]);
+  }, [data, categories, addCategory, addItem, showToast]);
 
   const handleSave = useCallback(async () => {
-    if (signedIn) {
-      doImport();
+    if (!signedIn) {
+      const cats =
+        data.type === "cat"
+          ? [{ name: data.n, icon: data.i ?? "folder-outline", color: data.c ?? "#6366F1", items: data.items }]
+          : data.cats.map((b) => ({ name: b.n, icon: b.i ?? "folder-outline", color: b.c ?? "#6366F1", items: b.items }));
+      await setPendingImport({ cats });
+      router.push("/sign-in");
       return;
     }
-    const cats =
-      data.type === "cat"
-        ? [{ name: data.n, icon: data.i ?? "folder-outline", color: data.c ?? "#6366F1", items: data.items }]
-        : data.cats.map((b) => ({ name: b.n, icon: b.i ?? "folder-outline", color: b.c ?? "#6366F1", items: b.items }));
-    await setPendingImport({ cats });
-    router.push("/sign-in");
+    if (data.type === "cat") {
+      setShowPicker(true);
+    } else {
+      doImport();
+    }
   }, [signedIn, data, doImport]);
+
+  const handlePickerSelect = useCallback((categoryId: string | null) => {
+    setShowPicker(false);
+    doImport(categoryId);
+  }, [doImport]);
 
   if (saved) {
     return (
@@ -132,31 +237,46 @@ function SavePlaylistButton({ data }: { data: PlaylistData }) {
     );
   }
 
+  const playlistColor = data.type === "cat" ? (data.c ?? "#6366F1") : (data.cats[0]?.c ?? "#6366F1");
+
   return (
-    <TouchableOpacity
-      style={styles.saveBtn}
-      onPress={handleSave}
-      activeOpacity={0.82}
-      disabled={saving}
-    >
-      <LinearGradient
-        colors={["#818CF8", "#6366F1", "#4338CA"]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 0 }}
-        style={styles.saveBtnGradient}
+    <>
+      <TouchableOpacity
+        style={styles.saveBtn}
+        onPress={handleSave}
+        activeOpacity={0.82}
+        disabled={saving}
       >
-        {saving ? (
-          <ActivityIndicator color="#fff" size="small" />
-        ) : (
-          <>
-            <Ionicons name="bookmark" size={17} color="#fff" />
-            <Text style={styles.saveBtnText}>
-              {signedIn ? "Save to my library" : "Save to SkillSee"}
-            </Text>
-          </>
-        )}
-      </LinearGradient>
-    </TouchableOpacity>
+        <LinearGradient
+          colors={["#818CF8", "#6366F1", "#4338CA"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={styles.saveBtnGradient}
+        >
+          {saving ? (
+            <ActivityIndicator color="#fff" size="small" />
+          ) : (
+            <>
+              <Ionicons name="bookmark" size={17} color="#fff" />
+              <Text style={styles.saveBtnText}>
+                {signedIn ? "Save to my library" : "Save to SkillSee"}
+              </Text>
+            </>
+          )}
+        </LinearGradient>
+      </TouchableOpacity>
+
+      {data.type === "cat" && (
+        <CategoryPickerSheet
+          visible={showPicker}
+          categories={categories}
+          playlistName={data.n}
+          playlistColor={playlistColor}
+          onClose={() => setShowPicker(false)}
+          onSelect={handlePickerSelect}
+        />
+      )}
+    </>
   );
 }
 
@@ -568,4 +688,110 @@ const styles = StyleSheet.create({
   },
 
   footer: { color: "#1A2030", fontSize: 11, textAlign: "center", marginTop: 8, marginBottom: 8 },
+
+  sheetOverlay: {
+    flex: 1,
+    backgroundColor: "#000000AA",
+    justifyContent: "flex-end",
+  },
+  sheetContainer: {
+    backgroundColor: "#0C1018",
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingTop: 12,
+    paddingBottom: 36,
+    maxHeight: "80%",
+  },
+  sheetHandle: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "#2A3348",
+    alignSelf: "center",
+    marginBottom: 20,
+  },
+  sheetTitle: {
+    color: "#E8EDF5",
+    fontSize: 18,
+    fontWeight: "700",
+    paddingHorizontal: 20,
+    marginBottom: 4,
+  },
+  sheetSub: {
+    color: "#4D5D7A",
+    fontSize: 13,
+    paddingHorizontal: 20,
+    marginBottom: 20,
+  },
+  sheetNewRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    marginHorizontal: 16,
+    padding: 14,
+    backgroundColor: "#141920",
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#1E2A3A",
+  },
+  sheetNewIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  sheetRowBody: { flex: 1 },
+  sheetRowName: {
+    color: "#E8EDF5",
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  sheetRowMeta: {
+    color: "#4D5D7A",
+    fontSize: 12,
+    marginTop: 2,
+  },
+  sheetDivider: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginHorizontal: 16,
+    marginTop: 20,
+    marginBottom: 12,
+  },
+  sheetDividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: "#1A2030",
+  },
+  sheetDividerLabel: {
+    color: "#2A3A50",
+    fontSize: 10,
+    fontWeight: "700",
+    letterSpacing: 0.8,
+  },
+  sheetList: {
+    maxHeight: 280,
+  },
+  sheetListContent: {
+    gap: 6,
+    paddingHorizontal: 16,
+    paddingBottom: 8,
+  },
+  sheetCatRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    padding: 12,
+    backgroundColor: "#141920",
+    borderRadius: 12,
+  },
+  sheetCatIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+  },
 });
