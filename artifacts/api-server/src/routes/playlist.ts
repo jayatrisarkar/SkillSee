@@ -40,6 +40,10 @@ router.get("/:id", async (req: Request, res: Response) => {
       res.status(404).json({ error: "Playlist not found" });
       return;
     }
+    if (row.expiresAt && row.expiresAt < new Date()) {
+      res.status(404).json({ error: "Playlist expired" });
+      return;
+    }
     res.json(row);
   } catch (err) {
     req.log.error(err, "Failed to fetch shared playlist");

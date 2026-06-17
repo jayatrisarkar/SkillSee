@@ -252,16 +252,26 @@ export default function PlaylistPage() {
   const [apiData, setApiData] = useState<PlaylistData | null>(null);
   const [loading, setLoading] = useState(false);
   const [apiError, setApiError] = useState(false);
+  const [isExpired, setIsExpired] = useState(false);
 
   useEffect(() => {
     if (!id) return;
     setLoading(true);
     fetch(`${getApiBase()}/playlist/${id}`)
-      .then((r) => {
-        if (!r.ok) throw new Error("not found");
+      .then(async (r) => {
+        if (!r.ok) {
+          const body = await r.json().catch(() => ({}));
+          if (body?.error === "Playlist expired") {
+            setIsExpired(true);
+          } else {
+            setApiError(true);
+          }
+          return null;
+        }
         return r.json();
       })
       .then((row) => {
+        if (!row) return;
         setApiData({
           type: "cat",
           n: row.title,
@@ -290,6 +300,32 @@ export default function PlaylistPage() {
       return (
         <View style={styles.errorContainer}>
           <ActivityIndicator size="large" color="#6366F1" />
+        </View>
+      );
+    }
+    if (isExpired) {
+      return (
+        <View style={styles.errorContainer}>
+          <View style={styles.expiredIcon}>
+            <Ionicons name="time-outline" size={36} color="#818CF8" />
+          </View>
+          <Text style={styles.errorTitle}>This link has expired</Text>
+          <Text style={styles.errorSub}>Shared playlist links are only valid for 30 days.</Text>
+          <TouchableOpacity
+            style={styles.ctaBtn}
+            onPress={() => Linking.openURL(getAppUrl())}
+            activeOpacity={0.82}
+          >
+            <LinearGradient
+              colors={["#818CF8", "#6366F1", "#4338CA"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.ctaBtnGradient}
+            >
+              <Ionicons name="library" size={16} color="#fff" />
+              <Text style={styles.ctaBtnText}>Get SkillSee</Text>
+            </LinearGradient>
+          </TouchableOpacity>
         </View>
       );
     }
@@ -332,6 +368,34 @@ const styles = StyleSheet.create({
   },
   errorTitle: { color: "#FFFFFF", fontSize: 20, fontWeight: "700" },
   errorSub: { color: "#666", fontSize: 14, textAlign: "center" },
+
+  expiredIcon: {
+    width: 72,
+    height: 72,
+    borderRadius: 20,
+    backgroundColor: "#6366F118",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  ctaBtn: {
+    marginTop: 8,
+    borderRadius: 14,
+    overflow: "hidden",
+    width: "100%",
+  },
+  ctaBtnGradient: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 16,
+    gap: 8,
+  },
+  ctaBtnText: {
+    color: "#FFFFFF",
+    fontSize: 15,
+    fontWeight: "700",
+    letterSpacing: 0.1,
+  },
 
   header: {
     padding: 32,
