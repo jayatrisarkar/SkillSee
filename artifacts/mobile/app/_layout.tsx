@@ -21,6 +21,7 @@ import { ThemeProvider } from "@/context/ThemeContext";
 import { LibraryProvider } from "@/context/LibraryContext";
 import { ProfileProvider } from "@/context/ProfileContext";
 import { ClerkBridge } from "@/context/AuthContext";
+import { ShareProvider } from "@/context/ShareContext";
 import { initializeRevenueCat, SubscriptionProvider } from "@/lib/revenuecat";
 
 SplashScreen.preventAutoHideAsync();
@@ -106,7 +107,9 @@ export default function RootLayout() {
                   <KeyboardProvider>
                     <ProfileProvider>
                       <LibraryProvider>
-                        <RootLayoutNav />
+                        <ShareProvider>
+                          <RootLayoutNav />
+                        </ShareProvider>
                       </LibraryProvider>
                     </ProfileProvider>
                   </KeyboardProvider>

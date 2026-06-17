@@ -30,6 +30,7 @@ import {
   getNotificationsEnabled,
   requestAndEnableNotifications,
 } from "@/utils/notifications";
+import { getAutoSave, setAutoSave } from "@/lib/shareSettings";
 
 interface SettingRowProps {
   icon: string;
@@ -99,11 +100,19 @@ export default function ProfileScreen() {
   const topInset = Platform.OS === "web" ? 67 : insets.top;
 
   const [notifEnabled, setNotifEnabled] = useState(false);
+  const [autoSaveEnabled, setAutoSaveEnabled] = useState(false);
   const [showLogout, setShowLogout] = useState(false);
 
   useEffect(() => {
     getNotificationsEnabled().then(setNotifEnabled);
+    getAutoSave().then(setAutoSaveEnabled);
   }, []);
+
+  async function handleToggleAutoSave(val: boolean) {
+    setAutoSaveEnabled(val);
+    await setAutoSave(val);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  }
 
   async function handleToggleNotif(val: boolean) {
     if (val) {
@@ -338,6 +347,24 @@ export default function ProfileScreen() {
       {/* ── Settings ── */}
       <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>Settings</Text>
       <View style={[styles.settingsGroup, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <View style={[styles.settingRow, { borderBottomColor: colors.border }]}>
+          <View style={[styles.settingIconWrap, { backgroundColor: "#22D3EE22" }]}>
+            <Ionicons name="share-social-outline" size={18} color="#22D3EE" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.settingLabel, { color: colors.foreground, flex: 0 }]}>Auto Save Shared Content</Text>
+            <Text style={{ fontSize: 11, color: colors.mutedForeground, fontFamily: "Inter_400Regular", marginTop: 1 }}>
+              Skip the save screen when sharing links
+            </Text>
+          </View>
+          <Switch
+            value={autoSaveEnabled}
+            onValueChange={handleToggleAutoSave}
+            trackColor={{ false: colors.secondary, true: "#22D3EE99" }}
+            thumbColor={autoSaveEnabled ? "#22D3EE" : colors.mutedForeground}
+            ios_backgroundColor={colors.secondary}
+          />
+        </View>
         <View style={[styles.settingRow, { borderBottomColor: colors.border }]}>
           <View style={[styles.settingIconWrap, { backgroundColor: "#8B5CF622" }]}>
             <Ionicons name="notifications-outline" size={18} color="#8B5CF6" />

@@ -69,6 +69,19 @@
           "color": "#6366F1",
           "sounds": []
         }
+      ],
+      [
+        "expo-share-intent",
+        {
+          "iosActivationRules": {
+            "NSExtensionActivationSupportsWebURLWithMaxCount": 1,
+            "NSExtensionActivationSupportsWebPageWithMaxCount": 1
+          },
+          "androidIntentFilters": ["text/*"],
+          "androidMainActivityAttributes": {
+            "android:launchMode": "singleTask"
+          }
+        }
       ]
     ],
     "experiments": {

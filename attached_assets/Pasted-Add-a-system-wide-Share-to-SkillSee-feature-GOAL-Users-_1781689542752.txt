@@ -1,0 +1,146 @@
+Add a system-wide Share to SkillSee feature.
+
+GOAL
+
+Users should be able to share content directly from other apps into SkillSee.
+
+SUPPORTED APPS
+
+* YouTube
+* YouTube Shorts
+* Instagram Reels
+* Instagram Posts
+* TikTok
+* Facebook Videos
+* Facebook Posts
+* X (Twitter)
+* Threads
+* LinkedIn
+* Websites
+* Blogs
+* Any app that supports sharing links
+
+SHARE FLOW
+
+When a user taps Share inside another app:
+
+SkillSee should appear in the native share sheet.
+
+Example:
+
+Share → SkillSee
+
+When selected:
+
+Automatically open SkillSee.
+
+Capture:
+
+* URL
+* Title (if available)
+* Source Platform
+* Thumbnail (if available)
+
+AUTO SAVE SCREEN
+
+Show a popup:
+
+Save to SkillSee
+
+Content Preview:
+
+* Thumbnail
+* Title
+* Source Platform
+
+Category Dropdown:
+
+Default Categories:
+
+* Dance
+* Singing
+* Instruments
+* Coding
+* Finance
+* Gym & Fitness
+* Cooking
+* Art
+* Learning
+
+Custom Categories should also appear.
+
+Buttons:
+
+* Save
+* Cancel
+
+AUTO CATEGORIZATION READY
+
+Build the system so future AI integration is easy.
+
+Create a function:
+
+categorizeContent(title, description, url)
+
+For now:
+
+Use keyword matching.
+
+Examples:
+
+"Python", "JavaScript", "Coding" → Coding
+
+"Gym", "Workout", "Fitness" → Gym & Fitness
+
+"Stock", "Trading", "Investing" → Finance
+
+"Guitar", "Piano", "Music" → Instruments
+
+If no match:
+
+Assign category:
+Learning
+
+Later this function will be replaced with AI API categorization.
+
+AUTO SAVE OPTION
+
+Add a setting:
+
+Auto Save Shared Content
+
+Toggle:
+ON / OFF
+
+When ON:
+
+Shared content is automatically saved without showing the save screen.
+
+Category assignment uses the categorization function.
+
+If category confidence is low:
+
+Save into Learning.
+
+DATABASE FIELDS
+
+Store:
+
+* id
+* title
+* url
+* sourcePlatform
+* thumbnail
+* category
+* notes
+* tags
+* learningStatus
+* createdAt
+
+REQUIREMENTS
+
+* Works on Android share intent.
+* Prepare architecture for iOS share extension later.
+* Clean production-ready code.
+* Future AI categorization can be plugged in without changing the save flow.
+* Maintain existing SkillSee functionality.
