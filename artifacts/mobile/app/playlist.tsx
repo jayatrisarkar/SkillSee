@@ -3,8 +3,10 @@ import { LinearGradient } from "expo-linear-gradient";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
+  Image,
   Linking,
   Modal,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -280,37 +282,91 @@ function SavePlaylistButton({ data }: { data: PlaylistData }) {
   );
 }
 
-function GetAppBanner() {
+const IOS_STORE = "https://apps.apple.com/app/skillsee/id000000000";
+const ANDROID_STORE = "https://play.google.com/store/apps/details?id=com.skillsee.app";
+
+function openOrDownload(playlistId?: string) {
+  const deepLink = playlistId
+    ? `skillsee://playlist?id=${playlistId}`
+    : "skillsee://";
+  Linking.openURL(deepLink).catch(() => {});
+  const ua = Platform.OS === "web" ? navigator.userAgent : "";
+  const isIOS = /iPhone|iPad|iPod/.test(ua);
+  setTimeout(() => {
+    Linking.openURL(isIOS ? IOS_STORE : ANDROID_STORE).catch(() => {});
+  }, 1500);
+}
+
+function GetAppBanner({ playlistId }: { playlistId?: string }) {
   return (
     <View style={styles.banner}>
-      <View style={styles.bannerLeft}>
-        <View style={styles.bannerIcon}>
-          <Ionicons name="library" size={20} color="#818CF8" />
-        </View>
-        <View>
-          <Text style={styles.bannerTitle}>Discover SkillSee</Text>
-          <Text style={styles.bannerSub}>Organize your learning, track your progress</Text>
+      {/* Header row */}
+      <View style={styles.bannerHeader}>
+        <Image
+          source={require("../assets/images/skillsee-logo.jpeg")}
+          style={styles.bannerLogo}
+        />
+        <View style={styles.bannerHeaderText}>
+          <Text style={styles.bannerTitle}>SkillSee</Text>
+          <Text style={styles.bannerSub}>Save. Learn. Master.</Text>
         </View>
       </View>
+
+      <Text style={styles.bannerDesc}>
+        Save this playlist to your library and track your learning progress through every resource.
+      </Text>
+
+      {/* Primary CTA */}
       <TouchableOpacity
-        style={styles.bannerBtn}
-        onPress={() => Linking.openURL(getAppUrl())}
+        style={styles.bannerOpenBtn}
+        onPress={() => openOrDownload(playlistId)}
         activeOpacity={0.82}
       >
-        <Text style={styles.bannerBtnText}>Learn more</Text>
+        <LinearGradient
+          colors={["#818CF8", "#6366F1", "#4338CA"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={styles.bannerOpenGradient}
+        >
+          <Ionicons name="phone-portrait-outline" size={16} color="#fff" />
+          <Text style={styles.bannerOpenText}>Open in App</Text>
+        </LinearGradient>
       </TouchableOpacity>
+
+      {/* Store row */}
+      <View style={styles.storeRow}>
+        <TouchableOpacity
+          style={styles.storeBtn}
+          onPress={() => Linking.openURL(IOS_STORE)}
+          activeOpacity={0.78}
+        >
+          <Ionicons name="logo-apple" size={18} color="#E8EDF5" />
+          <Text style={styles.storeBtnText}>App Store</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.storeBtn}
+          onPress={() => Linking.openURL(ANDROID_STORE)}
+          activeOpacity={0.78}
+        >
+          <Ionicons name="logo-google-playstore" size={16} color="#E8EDF5" />
+          <Text style={styles.storeBtnText}>Google Play</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
 
-function PlaylistContent({ data }: { data: PlaylistData }) {
+function PlaylistContent({ data, playlistId }: { data: PlaylistData; playlistId?: string }) {
   if (data.type === "cat") {
     const color = data.c ?? "#6366F1";
     return (
       <ScrollView style={styles.page} contentContainerStyle={styles.pageContent}>
         <LinearGradient colors={[color + "55", "#070A10"]} style={styles.header}>
           <View style={styles.appBadge}>
-            <Ionicons name="library" size={12} color="#FFFFFF" style={{ marginRight: 5 }} />
+            <Image
+              source={require("../assets/images/skillsee-logo.jpeg")}
+              style={styles.appBadgeLogo}
+            />
             <Text style={styles.appBadgeText}>SkillSee</Text>
           </View>
           <View style={[styles.iconWrap, { backgroundColor: color + "30" }]}>
@@ -328,8 +384,8 @@ function PlaylistContent({ data }: { data: PlaylistData }) {
             <ItemRow key={i} item={item} index={i} color={color} />
           ))}
         </View>
-        <GetAppBanner />
-        <Text style={styles.footer}>Made with SkillSee · Save. Learn. Master.</Text>
+        <GetAppBanner playlistId={playlistId} />
+        <Text style={styles.footer}>SkillSee · Save. Learn. Master.</Text>
       </ScrollView>
     );
   }
@@ -341,7 +397,10 @@ function PlaylistContent({ data }: { data: PlaylistData }) {
     <ScrollView style={styles.page} contentContainerStyle={styles.pageContent}>
       <LinearGradient colors={[primaryColor + "44", "#070A10"]} style={styles.header}>
         <View style={styles.appBadge}>
-          <Ionicons name="library" size={12} color="#FFFFFF" style={{ marginRight: 5 }} />
+          <Image
+            source={require("../assets/images/skillsee-logo.jpeg")}
+            style={styles.appBadgeLogo}
+          />
           <Text style={styles.appBadgeText}>SkillSee</Text>
         </View>
         <View style={[styles.iconWrap, { backgroundColor: primaryColor + "30" }]}>
@@ -370,8 +429,8 @@ function PlaylistContent({ data }: { data: PlaylistData }) {
         </View>
       ))}
 
-      <GetAppBanner />
-      <Text style={styles.footer}>Made with SkillSee · Save. Learn. Master.</Text>
+      <GetAppBanner playlistId={playlistId} />
+      <Text style={styles.footer}>SkillSee · Save. Learn. Master.</Text>
     </ScrollView>
   );
 }
@@ -470,7 +529,7 @@ export default function PlaylistPage() {
         </View>
       );
     }
-    return <PlaylistContent data={apiData} />;
+    return <PlaylistContent data={apiData} playlistId={id} />;
   }
 
   if (!base64Data) {
@@ -640,51 +699,87 @@ const styles = StyleSheet.create({
   itemTitle: { color: "#E8EDF5", fontSize: 13, fontWeight: "600", marginBottom: 2 },
   itemUrl: { color: "#4D5D7A", fontSize: 11 },
 
+  appBadgeLogo: {
+    width: 14,
+    height: 14,
+    borderRadius: 3,
+    marginRight: 5,
+  },
+
   banner: {
     margin: 20,
     marginTop: 28,
     backgroundColor: "#0C1018",
-    borderRadius: 16,
-    padding: 16,
+    borderRadius: 20,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: "#FFFFFF0F",
+    gap: 14,
+  },
+  bannerHeader: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
     gap: 12,
   },
-  bannerLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    flex: 1,
-  },
-  bannerIcon: {
-    width: 40,
-    height: 40,
+  bannerLogo: {
+    width: 48,
+    height: 48,
     borderRadius: 12,
-    backgroundColor: "#6366F118",
-    alignItems: "center",
-    justifyContent: "center",
+  },
+  bannerHeaderText: {
+    flex: 1,
   },
   bannerTitle: {
     color: "#E8EDF5",
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: "700",
   },
   bannerSub: {
     color: "#4D5D7A",
     fontSize: 12,
-    marginTop: 1,
+    marginTop: 2,
   },
-  bannerBtn: {
-    backgroundColor: "#6366F118",
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 9,
-  },
-  bannerBtnText: {
-    color: "#818CF8",
+  bannerDesc: {
+    color: "#6B7A99",
     fontSize: 13,
+    lineHeight: 19,
+  },
+  bannerOpenBtn: {
+    borderRadius: 14,
+    overflow: "hidden",
+  },
+  bannerOpenGradient: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 14,
+    gap: 8,
+  },
+  bannerOpenText: {
+    color: "#FFFFFF",
+    fontSize: 15,
     fontWeight: "700",
+  },
+  storeRow: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  storeBtn: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    backgroundColor: "#FFFFFF0F",
+    borderRadius: 12,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: "#FFFFFF0D",
+  },
+  storeBtnText: {
+    color: "#E8EDF5",
+    fontSize: 13,
+    fontWeight: "600",
   },
 
   footer: { color: "#1A2030", fontSize: 11, textAlign: "center", marginTop: 8, marginBottom: 8 },

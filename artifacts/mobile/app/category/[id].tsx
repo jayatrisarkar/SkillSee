@@ -82,14 +82,10 @@ export default function CategoryScreen() {
       playlistUrl = `${origin}/playlist?d=${encoded}`;
     }
 
-    const videoList = allItems
-      .map((it, idx) => `${idx + 1}. ${it.title}\n   ${it.url}`)
-      .join("\n");
+    const resourceWord = allItems.length === 1 ? "resource" : "resources";
     const shareMessage =
-      `${category.name} playlist — ${allItems.length} ${allItems.length === 1 ? "resource" : "resources"}\n\n` +
-      `${videoList}\n\n` +
-      `View full playlist: ${playlistUrl}\n\n` +
-      `Get SkillSee: ${origin}`;
+      `${category.name} — ${allItems.length} ${resourceWord}\n\n` +
+      `${playlistUrl}`;
 
     try {
       if (Platform.OS === "web") {
