@@ -3,7 +3,6 @@ import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
-  FlatList,
   Platform,
   Share,
   StyleSheet,
@@ -11,6 +10,11 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import DraggableFlatList, {
+  RenderItemParams,
+  ScaleDecorator,
+} from "react-native-draggable-flatlist";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { ConfirmModal } from "@/components/ConfirmModal";
@@ -48,9 +52,9 @@ export default function CategoriesScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { categories, items, deleteCategory } = useLibrary();
+  const { categories, items, deleteCategory, reorderCategories } = useLibrary();
   const [catToDelete, setCatToDelete] = useState<Category | null>(null);
-  const [copiedId, setCopiedId] = useState<string | null>(null); // null | catId | "all"
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const topInset = Platform.OS === "web" ? 67 : insets.top;
 
@@ -74,7 +78,7 @@ export default function CategoriesScreen() {
     try {
       await copyOrShare(url, `${cat.name} Playlist — SkillSee`);
       flashCopied(cat.id);
-    } catch { /* cancelled */ }
+    } catch { }
   }
 
   async function handleShareAll() {
@@ -94,7 +98,7 @@ export default function CategoriesScreen() {
     try {
       await copyOrShare(url, "My SkillSee Library");
       flashCopied("all");
-    } catch { /* cancelled */ }
+    } catch { }
   }
 
   function handleDelete(cat: Category) {
@@ -108,7 +112,12 @@ export default function CategoriesScreen() {
     const count = items.filter((it) => it.categoryId === cat.id).length;
     const others = categories.filter((c) => c.id !== cat.id);
     const target = others.find((c) => c.name === "Learning") ?? others[0];
-    const actions = [{ label: "Cancel", onPress: () => {} }] as Array<{ label: string; onPress: () => void; destructive?: boolean; primary?: boolean }>;
+    const actions = [{ label: "Cancel", onPress: () => {} }] as Array<{
+      label: string;
+      onPress: () => void;
+      destructive?: boolean;
+      primary?: boolean;
+    }>;
     if (count > 0) {
       actions.push({
         label: `Move ${count} item${count !== 1 ? "s" : ""} to ${target.name}`,
@@ -132,134 +141,171 @@ export default function CategoriesScreen() {
 
   const totalItems = items.filter((it) => !it.isArchived).length;
 
+  function renderItem({ item: cat, drag, isActive }: RenderItemParams<Category>) {
+    const count = items.filter((it) => it.categoryId === cat.id && !it.isArchived).length;
+    const isCopied = copiedId === cat.id;
+
+    return (
+      <ScaleDecorator activeScale={1.03}>
+        <View
+          style={[
+            styles.row,
+            {
+              backgroundColor: isActive ? colors.secondary : colors.card,
+              borderColor: isActive ? cat.color + "66" : colors.border,
+              marginBottom: 8,
+            },
+          ]}
+        >
+          {/* Drag handle */}
+          <TouchableOpacity
+            onLongPress={drag}
+            onPressIn={drag}
+            delayLongPress={0}
+            activeOpacity={0.6}
+            style={styles.dragHandle}
+          >
+            <Ionicons name="reorder-three-outline" size={22} color={colors.mutedForeground} />
+          </TouchableOpacity>
+
+          {/* Main tappable area → open category */}
+          <TouchableOpacity
+            style={styles.rowLeft}
+            onPress={() => router.push(`/category/${cat.id}`)}
+            activeOpacity={0.75}
+          >
+            <View style={[styles.iconWrap, { backgroundColor: cat.color + "22" }]}>
+              <Ionicons name={cat.icon as any} size={22} color={cat.color} />
+            </View>
+            <View style={styles.rowInfo}>
+              <Text style={[styles.catName, { color: colors.foreground }]}>{cat.name}</Text>
+              <Text style={[styles.catCount, { color: colors.mutedForeground }]}>
+                {count} {count === 1 ? "item" : "items"}
+              </Text>
+            </View>
+          </TouchableOpacity>
+
+          {/* Action buttons */}
+          <View style={styles.rowActions}>
+            {count > 0 && (
+              <TouchableOpacity
+                onPress={() => handleShareCat(cat)}
+                activeOpacity={0.6}
+                style={[styles.actionBtn, isCopied && styles.actionBtnCopied]}
+              >
+                <Ionicons
+                  name={isCopied ? "checkmark" : "share-outline"}
+                  size={17}
+                  color={isCopied ? "#10B981" : colors.mutedForeground}
+                />
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity
+              onPress={() => router.push(`/category/${cat.id}?edit=1`)}
+              activeOpacity={0.6}
+              style={styles.actionBtn}
+            >
+              <Ionicons name="pencil-outline" size={18} color={colors.mutedForeground} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => handleDelete(cat)}
+              activeOpacity={0.6}
+              style={styles.actionBtn}
+            >
+              <Ionicons name="trash-outline" size={18} color={colors.destructive} />
+            </TouchableOpacity>
+          </View>
+        </View>
+      </ScaleDecorator>
+    );
+  }
+
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <FlatList
-        data={categories}
-        keyExtractor={(c) => c.id}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={[
-          styles.list,
-          {
-            paddingTop: topInset + 16,
-            paddingBottom: Platform.OS === "web" ? 34 + 84 + 16 : insets.bottom + 100,
-          },
-        ]}
-        ListHeaderComponent={
-          <View>
-            <View style={styles.header}>
-              <Text style={[styles.title, { color: colors.foreground }]}>Categories</Text>
-              <View style={styles.headerActions}>
-                {totalItems > 0 && (
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <DraggableFlatList
+          data={categories}
+          keyExtractor={(c) => c.id}
+          showsVerticalScrollIndicator={false}
+          onDragBegin={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)}
+          onDragEnd={({ data }) => {
+            reorderCategories(data);
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          }}
+          contentContainerStyle={[
+            styles.list,
+            {
+              paddingTop: topInset + 16,
+              paddingBottom: Platform.OS === "web" ? 34 + 84 + 16 : insets.bottom + 100,
+            },
+          ]}
+          ListHeaderComponent={
+            <View>
+              <View style={styles.header}>
+                <Text style={[styles.title, { color: colors.foreground }]}>Categories</Text>
+                <View style={styles.headerActions}>
+                  {totalItems > 0 && (
+                    <TouchableOpacity
+                      style={[
+                        styles.headerBtn,
+                        { backgroundColor: copiedId === "all" ? "#10B98122" : colors.secondary },
+                      ]}
+                      onPress={handleShareAll}
+                      activeOpacity={0.8}
+                    >
+                      <Ionicons
+                        name={copiedId === "all" ? "checkmark" : "share-outline"}
+                        size={18}
+                        color={copiedId === "all" ? "#10B981" : colors.mutedForeground}
+                      />
+                    </TouchableOpacity>
+                  )}
                   <TouchableOpacity
-                    style={[styles.headerBtn, { backgroundColor: copiedId === "all" ? "#10B98122" : colors.secondary }]}
-                    onPress={handleShareAll}
+                    style={[styles.addBtn, { backgroundColor: colors.primary }]}
+                    onPress={() => router.push("/new-category")}
                     activeOpacity={0.8}
                   >
-                    <Ionicons
-                      name={copiedId === "all" ? "checkmark" : "share-outline"}
-                      size={18}
-                      color={copiedId === "all" ? "#10B981" : colors.mutedForeground}
-                    />
+                    <Ionicons name="add" size={20} color="#FFFFFF" />
                   </TouchableOpacity>
-                )}
-                <TouchableOpacity
-                  style={[styles.addBtn, { backgroundColor: colors.primary }]}
-                  onPress={() => router.push("/new-category")}
-                  activeOpacity={0.8}
-                >
-                  <Ionicons name="add" size={20} color="#FFFFFF" />
-                </TouchableOpacity>
-              </View>
-            </View>
-            {copiedId === "all" && (
-              <View style={[styles.toast, { backgroundColor: "#10B98122", borderColor: "#10B98144" }]}>
-                <Ionicons name="checkmark-circle" size={15} color="#10B981" />
-                <Text style={[styles.toastText, { color: "#10B981" }]}>
-                  Full library link copied — share it anywhere!
-                </Text>
-              </View>
-            )}
-          </View>
-        }
-        ListEmptyComponent={
-          <EmptyState
-            icon="grid-outline"
-            title="No categories"
-            description="Create categories to organize your saved content."
-            actionLabel="Create Category"
-            onAction={() => router.push("/new-category")}
-          />
-        }
-        renderItem={({ item: cat }) => {
-          const count = items.filter((it) => it.categoryId === cat.id && !it.isArchived).length;
-          const isCopied = copiedId === cat.id;
-          return (
-            <View style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <TouchableOpacity
-                style={styles.rowLeft}
-                onPress={() => router.push(`/category/${cat.id}`)}
-                activeOpacity={0.75}
-              >
-                <View style={[styles.iconWrap, { backgroundColor: cat.color + "22" }]}>
-                  <Ionicons name={cat.icon as any} size={22} color={cat.color} />
                 </View>
-                <View style={styles.rowInfo}>
-                  <Text style={[styles.catName, { color: colors.foreground }]}>{cat.name}</Text>
-                  <Text style={[styles.catCount, { color: colors.mutedForeground }]}>
-                    {count} {count === 1 ? "item" : "items"}
+              </View>
+              {copiedId === "all" && (
+                <View style={[styles.toast, { backgroundColor: "#10B98122", borderColor: "#10B98144" }]}>
+                  <Ionicons name="checkmark-circle" size={15} color="#10B981" />
+                  <Text style={[styles.toastText, { color: "#10B981" }]}>
+                    Full library link copied — share it anywhere!
                   </Text>
                 </View>
-              </TouchableOpacity>
-              <View style={styles.rowActions}>
-                {count > 0 && (
-                  <TouchableOpacity
-                    onPress={() => handleShareCat(cat)}
-                    activeOpacity={0.6}
-                    style={[styles.actionBtn, isCopied && styles.actionBtnCopied]}
-                  >
-                    <Ionicons
-                      name={isCopied ? "checkmark" : "share-outline"}
-                      size={17}
-                      color={isCopied ? "#10B981" : colors.mutedForeground}
-                    />
-                  </TouchableOpacity>
-                )}
-                <TouchableOpacity
-                  onPress={() => router.push(`/category/${cat.id}?edit=1`)}
-                  activeOpacity={0.6}
-                  style={styles.actionBtn}
-                >
-                  <Ionicons name="pencil-outline" size={18} color={colors.mutedForeground} />
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => handleDelete(cat)}
-                  activeOpacity={0.6}
-                  style={styles.actionBtn}
-                >
-                  <Ionicons name="trash-outline" size={18} color={colors.destructive} />
-                </TouchableOpacity>
-              </View>
+              )}
             </View>
-          );
-        }}
-        ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
-      />
-
-      {catToDelete && (
-        <ConfirmModal
-          visible={!!catToDelete}
-          title={`Delete "${catToDelete.name}"?`}
-          message={
-            items.filter((it) => it.categoryId === catToDelete.id).length > 0
-              ? `This category has items. Choose what to do with them.`
-              : "This category will be permanently deleted."
           }
-          onDismiss={() => setCatToDelete(null)}
-          actions={buildDeleteActions(catToDelete)}
+          ListEmptyComponent={
+            <EmptyState
+              icon="grid-outline"
+              title="No categories"
+              description="Create categories to organize your saved content."
+              actionLabel="Create Category"
+              onAction={() => router.push("/new-category")}
+            />
+          }
+          renderItem={renderItem}
         />
-      )}
-    </View>
+
+        {catToDelete && (
+          <ConfirmModal
+            visible={!!catToDelete}
+            title={`Delete "${catToDelete.name}"?`}
+            message={
+              items.filter((it) => it.categoryId === catToDelete.id).length > 0
+                ? `This category has items. Choose what to do with them.`
+                : "This category will be permanently deleted."
+            }
+            onDismiss={() => setCatToDelete(null)}
+            actions={buildDeleteActions(catToDelete)}
+          />
+        )}
+      </View>
+    </GestureHandlerRootView>
   );
 }
 
@@ -309,12 +355,20 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     borderWidth: 1,
   },
+  dragHandle: {
+    paddingLeft: 12,
+    paddingRight: 4,
+    paddingVertical: 18,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   rowLeft: {
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-    padding: 14,
+    paddingVertical: 14,
+    paddingRight: 4,
   },
   iconWrap: {
     width: 44,

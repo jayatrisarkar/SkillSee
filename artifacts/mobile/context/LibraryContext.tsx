@@ -48,6 +48,7 @@ interface LibraryContextType {
   updateItem: (id: string, updates: Partial<Omit<ContentItem, "id" | "createdAt">>) => void;
   deleteItem: (id: string) => void;
   getItemsByCategory: (categoryId: string, includeArchived?: boolean) => ContentItem[];
+  reorderCategories: (newOrder: Category[]) => void;
   clearAllItems: () => Promise<void>;
   resetCategories: () => Promise<void>;
   syncNow: () => Promise<void>;
@@ -215,6 +216,14 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
       });
     },
     [saveCategories, pushCategoryUpdate]
+  );
+
+  const reorderCategories = useCallback(
+    (newOrder: Category[]) => {
+      setCategories(newOrder);
+      saveCategories(newOrder);
+    },
+    [saveCategories]
   );
 
   const deleteCategory = useCallback(
@@ -416,6 +425,7 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
         addCategory,
         updateCategory,
         deleteCategory,
+        reorderCategories,
         addItem,
         updateItem,
         deleteItem,
