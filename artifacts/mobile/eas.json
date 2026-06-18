@@ -16,7 +16,11 @@
     },
     "production": {
       "autoIncrement": true,
-      "node": "22.0.0"
+      "node": "22.0.0",
+      "env": {
+        "npm_config_ignore_engines": "true",
+        "YARN_IGNORE_ENGINES": "true"
+      }
     }
   },
   "submit": {
