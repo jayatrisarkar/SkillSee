@@ -1,6 +1,8 @@
 import express, { type Express } from "express";
 import cors from "cors";
 import pinoHttp from "pino-http";
+import path from "path";
+import { fileURLToPath } from "url";
 import { clerkMiddleware } from "@clerk/express";
 import { publishableKeyFromHost } from "@clerk/shared/keys";
 import {
@@ -9,6 +11,7 @@ import {
   getClerkProxyHost,
 } from "./middlewares/clerkProxyMiddleware";
 import router from "./routes";
+import playlistPageRouter from "./routes/playlistPage";
 import { logger } from "./lib/logger";
 
 const app: Express = express();
@@ -47,6 +50,10 @@ app.use(
     ),
   })),
 );
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+app.use("/playlist-assets", express.static(path.join(__dirname, "assets")));
+app.use("/playlist", playlistPageRouter);
 
 app.use("/api", router);
 

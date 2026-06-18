@@ -84,7 +84,8 @@ export default function CategoryScreen() {
 
     const resourceWord = allItems.length === 1 ? "resource" : "resources";
     const shareMessage =
-      `${category.name} — ${allItems.length} ${resourceWord}\n\n` +
+      `Check out this playlist on SkillSee:\n` +
+      `${category.name} — ${allItems.length} ${resourceWord}\n` +
       `${playlistUrl}`;
 
     try {
