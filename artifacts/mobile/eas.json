@@ -16,7 +16,7 @@
     },
     "production": {
       "autoIncrement": true,
-      "node": "22"
+      "node": "22.0.0"
     }
   },
   "submit": {
