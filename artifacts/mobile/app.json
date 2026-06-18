@@ -87,8 +87,9 @@
     },
     "extra": {
       "eas": {
-        "projectId": ""
+        "projectId": "2a9f663d-3776-4f1d-825b-e228660a6766"
       }
-    }
+    },
+    "owner": "jayatrisarkar"
   }
 }
