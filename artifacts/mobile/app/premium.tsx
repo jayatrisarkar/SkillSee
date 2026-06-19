@@ -13,11 +13,11 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import type { PurchasesPackage } from "react-native-purchases";
-
 import { useColors } from "@/hooks/useColors";
 import { useSubscription } from "@/lib/revenuecat";
 import { ConfirmModal } from "@/components/ConfirmModal";
+
+type PurchasesPackage = any;
 
 // ── Feature definitions ──────────────────────────────────────────────────────
 
