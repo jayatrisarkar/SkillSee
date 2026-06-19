@@ -12,7 +12,7 @@ config.resolver.blockList = [
 
 config.resolver.extraNodeModules = {
   ...config.resolver.extraNodeModules,
-  "@lib": path.resolve(__dirname, "lib"),
+  "@lib/revenuecat": path.resolve(__dirname, "lib/revenuecat"),
 };
 
 module.exports = config;

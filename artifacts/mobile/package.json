@@ -8,7 +8,7 @@
     "build": "node scripts/build.js",
     "serve": "node server/serve.js",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "postinstall": "node -e \"const fs=require('fs'),p='app/_layout.tsx';let c=fs.readFileSync(p,'utf8');const fixed=c.replace(/from '@lib\\/revenuecat'/g,\\\"from '@/lib/revenuecat'\\\");if(fixed!==c){fs.writeFileSync(p,fixed);console.log('[postinstall] Fixed @lib/revenuecat import');}else{console.log('[postinstall] Import path OK');}\" || true"
+    "postinstall": "node -e \"const fs=require('fs'),p='app/_layout.tsx';let c=fs.readFileSync(p,'utf8');const fixed=c.replace(/from [\\\"']@lib\\/revenuecat[\\\"']/g,'from \\\"@/lib/revenuecat\\\"');if(fixed!==c){fs.writeFileSync(p,fixed);console.log('[postinstall] Fixed @lib/revenuecat import');}else{console.log('[postinstall] Import path OK');}\" || true"
   },
   "devDependencies": {
     "@babel/core": "~7.25.2",
