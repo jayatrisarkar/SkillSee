@@ -3,6 +3,7 @@ import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
+  FlatList,
   Platform,
   Share,
   StyleSheet,
@@ -10,11 +11,6 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import DraggableFlatList, {
-  RenderItemParams,
-  ScaleDecorator,
-} from "react-native-draggable-flatlist";
-import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { ConfirmModal } from "@/components/ConfirmModal";
@@ -62,6 +58,15 @@ export default function CategoriesScreen() {
     setCopiedId(id);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setTimeout(() => setCopiedId(null), 2500);
+  }
+
+  function moveCategory(index: number, direction: "up" | "down") {
+    const next = [...categories];
+    const swapIndex = direction === "up" ? index - 1 : index + 1;
+    if (swapIndex < 0 || swapIndex >= next.length) return;
+    [next[index], next[swapIndex]] = [next[swapIndex], next[index]];
+    reorderCategories(next);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   }
 
   async function handleShareCat(cat: Category) {
@@ -141,171 +146,184 @@ export default function CategoriesScreen() {
 
   const totalItems = items.filter((it) => !it.isArchived).length;
 
-  function renderItem({ item: cat, drag, isActive }: RenderItemParams<Category>) {
+  function renderItem({ item: cat, index }: { item: Category; index: number }) {
     const count = items.filter((it) => it.categoryId === cat.id && !it.isArchived).length;
     const isCopied = copiedId === cat.id;
 
     return (
-      <ScaleDecorator activeScale={1.03}>
-        <View
-          style={[
-            styles.row,
-            {
-              backgroundColor: isActive ? colors.secondary : colors.card,
-              borderColor: isActive ? cat.color + "66" : colors.border,
-              marginBottom: 8,
-            },
-          ]}
-        >
-          {/* Drag handle */}
+      <View
+        style={[
+          styles.row,
+          {
+            backgroundColor: colors.card,
+            borderColor: colors.border,
+            marginBottom: 8,
+          },
+        ]}
+      >
+        {/* Up / down reorder buttons */}
+        <View style={styles.reorderCol}>
           <TouchableOpacity
-            onLongPress={drag}
-            onPressIn={drag}
-            delayLongPress={0}
+            onPress={() => moveCategory(index, "up")}
             activeOpacity={0.6}
-            style={styles.dragHandle}
+            style={[styles.reorderBtn, index === 0 && styles.reorderBtnDisabled]}
+            disabled={index === 0}
           >
-            <Ionicons name="reorder-three-outline" size={22} color={colors.mutedForeground} />
+            <Ionicons
+              name="chevron-up"
+              size={16}
+              color={index === 0 ? colors.border : colors.mutedForeground}
+            />
           </TouchableOpacity>
-
-          {/* Main tappable area → open category */}
           <TouchableOpacity
-            style={styles.rowLeft}
-            onPress={() => router.push(`/category/${cat.id}`)}
-            activeOpacity={0.75}
+            onPress={() => moveCategory(index, "down")}
+            activeOpacity={0.6}
+            style={[
+              styles.reorderBtn,
+              index === categories.length - 1 && styles.reorderBtnDisabled,
+            ]}
+            disabled={index === categories.length - 1}
           >
-            <View style={[styles.iconWrap, { backgroundColor: cat.color + "22" }]}>
-              <Ionicons name={cat.icon as any} size={22} color={cat.color} />
-            </View>
-            <View style={styles.rowInfo}>
-              <Text style={[styles.catName, { color: colors.foreground }]}>{cat.name}</Text>
-              <Text style={[styles.catCount, { color: colors.mutedForeground }]}>
-                {count} {count === 1 ? "item" : "items"}
-              </Text>
-            </View>
+            <Ionicons
+              name="chevron-down"
+              size={16}
+              color={
+                index === categories.length - 1 ? colors.border : colors.mutedForeground
+              }
+            />
           </TouchableOpacity>
-
-          {/* Action buttons */}
-          <View style={styles.rowActions}>
-            {count > 0 && (
-              <TouchableOpacity
-                onPress={() => handleShareCat(cat)}
-                activeOpacity={0.6}
-                style={[styles.actionBtn, isCopied && styles.actionBtnCopied]}
-              >
-                <Ionicons
-                  name={isCopied ? "checkmark" : "share-outline"}
-                  size={17}
-                  color={isCopied ? "#10B981" : colors.mutedForeground}
-                />
-              </TouchableOpacity>
-            )}
-            <TouchableOpacity
-              onPress={() => router.push(`/category/${cat.id}?edit=1`)}
-              activeOpacity={0.6}
-              style={styles.actionBtn}
-            >
-              <Ionicons name="pencil-outline" size={18} color={colors.mutedForeground} />
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => handleDelete(cat)}
-              activeOpacity={0.6}
-              style={styles.actionBtn}
-            >
-              <Ionicons name="trash-outline" size={18} color={colors.destructive} />
-            </TouchableOpacity>
-          </View>
         </View>
-      </ScaleDecorator>
+
+        {/* Main tappable area → open category */}
+        <TouchableOpacity
+          style={styles.rowLeft}
+          onPress={() => router.push(`/category/${cat.id}`)}
+          activeOpacity={0.75}
+        >
+          <View style={[styles.iconWrap, { backgroundColor: cat.color + "22" }]}>
+            <Ionicons name={cat.icon as any} size={22} color={cat.color} />
+          </View>
+          <View style={styles.rowInfo}>
+            <Text style={[styles.catName, { color: colors.foreground }]}>{cat.name}</Text>
+            <Text style={[styles.catCount, { color: colors.mutedForeground }]}>
+              {count} {count === 1 ? "item" : "items"}
+            </Text>
+          </View>
+        </TouchableOpacity>
+
+        {/* Action buttons */}
+        <View style={styles.rowActions}>
+          {count > 0 && (
+            <TouchableOpacity
+              onPress={() => handleShareCat(cat)}
+              activeOpacity={0.6}
+              style={[styles.actionBtn, isCopied && styles.actionBtnCopied]}
+            >
+              <Ionicons
+                name={isCopied ? "checkmark" : "share-outline"}
+                size={17}
+                color={isCopied ? "#10B981" : colors.mutedForeground}
+              />
+            </TouchableOpacity>
+          )}
+          <TouchableOpacity
+            onPress={() => router.push(`/category/${cat.id}?edit=1`)}
+            activeOpacity={0.6}
+            style={styles.actionBtn}
+          >
+            <Ionicons name="pencil-outline" size={18} color={colors.mutedForeground} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => handleDelete(cat)}
+            activeOpacity={0.6}
+            style={styles.actionBtn}
+          >
+            <Ionicons name="trash-outline" size={18} color={colors.destructive} />
+          </TouchableOpacity>
+        </View>
+      </View>
     );
   }
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <DraggableFlatList
-          data={categories}
-          keyExtractor={(c) => c.id}
-          showsVerticalScrollIndicator={false}
-          onDragBegin={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)}
-          onDragEnd={({ data }) => {
-            reorderCategories(data);
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-          }}
-          contentContainerStyle={[
-            styles.list,
-            {
-              paddingTop: topInset + 16,
-              paddingBottom: Platform.OS === "web" ? 34 + 84 + 16 : insets.bottom + 100,
-            },
-          ]}
-          ListHeaderComponent={
-            <View>
-              <View style={styles.header}>
-                <Text style={[styles.title, { color: colors.foreground }]}>Categories</Text>
-                <View style={styles.headerActions}>
-                  {totalItems > 0 && (
-                    <TouchableOpacity
-                      style={[
-                        styles.headerBtn,
-                        { backgroundColor: copiedId === "all" ? "#10B98122" : colors.secondary },
-                      ]}
-                      onPress={handleShareAll}
-                      activeOpacity={0.8}
-                    >
-                      <Ionicons
-                        name={copiedId === "all" ? "checkmark" : "share-outline"}
-                        size={18}
-                        color={copiedId === "all" ? "#10B981" : colors.mutedForeground}
-                      />
-                    </TouchableOpacity>
-                  )}
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <FlatList
+        data={categories}
+        keyExtractor={(c) => c.id}
+        showsVerticalScrollIndicator={false}
+        renderItem={renderItem}
+        contentContainerStyle={[
+          styles.list,
+          {
+            paddingTop: topInset + 16,
+            paddingBottom: Platform.OS === "web" ? 34 + 84 + 16 : insets.bottom + 100,
+          },
+        ]}
+        ListHeaderComponent={
+          <View>
+            <View style={styles.header}>
+              <Text style={[styles.title, { color: colors.foreground }]}>Categories</Text>
+              <View style={styles.headerActions}>
+                {totalItems > 0 && (
                   <TouchableOpacity
-                    style={[styles.addBtn, { backgroundColor: colors.primary }]}
-                    onPress={() => router.push("/new-category")}
+                    style={[
+                      styles.headerBtn,
+                      { backgroundColor: copiedId === "all" ? "#10B98122" : colors.secondary },
+                    ]}
+                    onPress={handleShareAll}
                     activeOpacity={0.8}
                   >
-                    <Ionicons name="add" size={20} color="#FFFFFF" />
+                    <Ionicons
+                      name={copiedId === "all" ? "checkmark" : "share-outline"}
+                      size={18}
+                      color={copiedId === "all" ? "#10B981" : colors.mutedForeground}
+                    />
                   </TouchableOpacity>
-                </View>
+                )}
+                <TouchableOpacity
+                  style={[styles.addBtn, { backgroundColor: colors.primary }]}
+                  onPress={() => router.push("/new-category")}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="add" size={20} color="#FFFFFF" />
+                </TouchableOpacity>
               </View>
-              {copiedId === "all" && (
-                <View style={[styles.toast, { backgroundColor: "#10B98122", borderColor: "#10B98144" }]}>
-                  <Ionicons name="checkmark-circle" size={15} color="#10B981" />
-                  <Text style={[styles.toastText, { color: "#10B981" }]}>
-                    Full library link copied — share it anywhere!
-                  </Text>
-                </View>
-              )}
             </View>
-          }
-          ListEmptyComponent={
-            <EmptyState
-              icon="grid-outline"
-              title="No categories"
-              description="Create categories to organize your saved content."
-              actionLabel="Create Category"
-              onAction={() => router.push("/new-category")}
-            />
-          }
-          renderItem={renderItem}
-        />
-
-        {catToDelete && (
-          <ConfirmModal
-            visible={!!catToDelete}
-            title={`Delete "${catToDelete.name}"?`}
-            message={
-              items.filter((it) => it.categoryId === catToDelete.id).length > 0
-                ? `This category has items. Choose what to do with them.`
-                : "This category will be permanently deleted."
-            }
-            onDismiss={() => setCatToDelete(null)}
-            actions={buildDeleteActions(catToDelete)}
+            {copiedId === "all" && (
+              <View style={[styles.toast, { backgroundColor: "#10B98122", borderColor: "#10B98144" }]}>
+                <Ionicons name="checkmark-circle" size={15} color="#10B981" />
+                <Text style={[styles.toastText, { color: "#10B981" }]}>
+                  Full library link copied — share it anywhere!
+                </Text>
+              </View>
+            )}
+          </View>
+        }
+        ListEmptyComponent={
+          <EmptyState
+            icon="grid-outline"
+            title="No categories"
+            description="Create categories to organize your saved content."
+            actionLabel="Create Category"
+            onAction={() => router.push("/new-category")}
           />
-        )}
-      </View>
-    </GestureHandlerRootView>
+        }
+      />
+
+      {catToDelete && (
+        <ConfirmModal
+          visible={!!catToDelete}
+          title={`Delete "${catToDelete.name}"?`}
+          message={
+            items.filter((it) => it.categoryId === catToDelete.id).length > 0
+              ? `This category has items. Choose what to do with them.`
+              : "This category will be permanently deleted."
+          }
+          onDismiss={() => setCatToDelete(null)}
+          actions={buildDeleteActions(catToDelete)}
+        />
+      )}
+    </View>
   );
 }
 
@@ -354,14 +372,21 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderRadius: 14,
     borderWidth: 1,
+    marginBottom: 8,
   },
-  dragHandle: {
-    paddingLeft: 12,
-    paddingRight: 4,
-    paddingVertical: 18,
+  reorderCol: {
+    paddingLeft: 10,
+    paddingRight: 2,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 0,
+  },
+  reorderBtn: {
+    padding: 6,
     alignItems: "center",
     justifyContent: "center",
   },
+  reorderBtnDisabled: { opacity: 0.3 },
   rowLeft: {
     flex: 1,
     flexDirection: "row",
