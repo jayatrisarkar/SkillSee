@@ -95,11 +95,11 @@ export default function PremiumScreen() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const monthlyPkg = offerings?.current?.availablePackages.find(
-    (p) => (p.identifier as string) === "$rc_monthly"
+    (p: any) => (p.identifier as string) === "$rc_monthly"
   ) ?? null;
 
   const yearlyPkg = offerings?.current?.availablePackages.find(
-    (p) => (p.identifier as string) === "$rc_annual"
+    (p: any) => (p.identifier as string) === "$rc_annual"
   ) ?? null;
 
   const activePkg = selectedPlan === "yearly" ? yearlyPkg : monthlyPkg;
