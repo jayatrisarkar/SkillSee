@@ -15,25 +15,48 @@ function getApiKey(): string | null {
 }
 
 let _configured = false;
+let _Purchases: any = null;
+
+function loadPurchasesModule(): any {
+  if (Platform.OS === "web") return null;
+  if (_Purchases) return _Purchases;
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const mod = require("react-native-purchases");
+    _Purchases = mod?.default ?? mod?.Purchases ?? mod ?? null;
+    return _Purchases;
+  } catch (e) {
+    console.warn("[RevenueCat] Failed to load native module:", e);
+    return null;
+  }
+}
 
 export function initializeRevenueCat() {
   if (Platform.OS === "web") return;
   const apiKey = getApiKey();
   if (!apiKey) {
-    throw new Error(
-      "RevenueCat API key not configured. Set EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY in EAS."
+    console.warn(
+      "[RevenueCat] No API key found — purchases disabled. " +
+      "Set EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY in EAS environment variables."
     );
+    return;
   }
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const Purchases = require("react-native-purchases").default;
-  Purchases.configure({ apiKey });
-  _configured = true;
+  const Purchases = loadPurchasesModule();
+  if (!Purchases) {
+    console.warn("[RevenueCat] Native module unavailable — purchases disabled.");
+    return;
+  }
+  try {
+    Purchases.configure({ apiKey });
+    _configured = true;
+  } catch (e) {
+    console.warn("[RevenueCat] configure() failed:", e);
+  }
 }
 
-function getPurchases() {
+function getPurchases(): any {
   if (!_configured || Platform.OS === "web") return null;
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  return require("react-native-purchases").default;
+  return _Purchases;
 }
 
 function useSubscriptionContext() {

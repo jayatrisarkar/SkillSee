@@ -27,11 +27,7 @@ import { initializeRevenueCat, SubscriptionProvider } from "@/lib/revenuecat";
 
 SplashScreen.preventAutoHideAsync();
 
-try {
-  initializeRevenueCat();
-} catch (err: any) {
-  console.warn("[RevenueCat] Init skipped:", err?.message ?? err);
-}
+initializeRevenueCat();
 
 const queryClient = new QueryClient();
 
