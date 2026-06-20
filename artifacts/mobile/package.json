@@ -61,7 +61,6 @@
     "badgin": "^1.2.3",
     "expo-auth-session": "~7.0.11",
     "expo-notifications": "~0.32.17",
-    "expo-secure-store": "~15.0.8",
-    "expo-share-intent": "^5.1.1"
+    "expo-secure-store": "~15.0.8"
   }
 }

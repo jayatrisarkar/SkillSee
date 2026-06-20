@@ -69,16 +69,6 @@
           "color": "#6366F1",
           "sounds": []
         }
-      ],
-      [
-        "expo-share-intent",
-        {
-          "disableIOS": true,
-          "androidIntentFilters": ["text/*"],
-          "androidMainActivityAttributes": {
-            "android:launchMode": "singleTask"
-          }
-        }
       ]
     ],
     "experiments": {
