@@ -52,7 +52,7 @@ export default function CategoryScreen() {
     const origin =
       Platform.OS === "web"
         ? window.location.origin
-        : domain ? `https://${domain}` : "https://skillsee.replit.app";
+        : domain ? `https://${domain}` : "";
     const apiBase = domain ? `https://${domain}/api` : "/api";
 
     let playlistUrl: string;

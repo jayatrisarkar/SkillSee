@@ -35,7 +35,7 @@ function getApiBase(): string {
 
 function getAppUrl(): string {
   const domain = process.env.EXPO_PUBLIC_DOMAIN ?? "";
-  return domain ? `https://${domain}` : "https://skillsee.replit.app";
+  return domain ? `https://${domain}` : "";
 }
 
 function ItemRow({ item, index, color }: { item: PlaylistItem; index: number; color: string }) {
