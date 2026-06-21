@@ -36,7 +36,7 @@
     },
     "android": {
       "package": "com.skillsee.app",
-      "versionCode": 30,
+      "versionCode": 100,
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#6366F1"
